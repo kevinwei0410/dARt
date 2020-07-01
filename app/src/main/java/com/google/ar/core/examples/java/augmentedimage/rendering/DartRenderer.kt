@@ -11,13 +11,10 @@ class DartRenderer {
     }
 
     private val dartRenderer = ObjectRenderer()
-    private val identityMatrix = Pose.IDENTITY.run {
-        val ret = FloatArray(16)
-        toMatrix(ret, 0)
-        ret
+
+    fun updateModelMatrix(modelMatrix: FloatArray) {
+        dartRenderer.updateModelMatrix(modelMatrix, 0.05f)
     }
-
-
 
     fun createOnGlThread(context: Context) {
         dartRenderer.createOnGlThread(context, "models/11750_throwing_dart_v1_L3.obj", "models/throwing_dart_diffuse.jpg")
@@ -28,9 +25,8 @@ class DartRenderer {
             viewMatrix: FloatArray,
             projectionMatrix: FloatArray,
             colorCorrectionRgba: FloatArray
-          ) {
+    ) {
         GLES30.glDisable(GLES30.GL_DEPTH_TEST)
-        dartRenderer.updateModelMatrix(identityMatrix, 0.05f)
         dartRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
         GLES30.glEnable(GLES30.GL_DEPTH_TEST)
     }

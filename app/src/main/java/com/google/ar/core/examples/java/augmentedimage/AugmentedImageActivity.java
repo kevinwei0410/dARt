@@ -287,16 +287,16 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             frame.getLightEstimate().getColorCorrection(colorCorrectionRgba, 0);
 
 
-
-
             // Visualize augmented images.
             drawAugmentedImages(frame, projmtx, viewmtx, colorCorrectionRgba);
 
             if (canDrawDart) {
                 float[] modelViewMatrix = new float[16];
-                Pose cameraPose = camera.getDisplayOrientedPose().extractTranslation();
-                cameraPose.compose(Pose.makeTranslation(0f, 0f, -1f)).toMatrix(modelViewMatrix, 0);
-                dartRenderer.draw(modelViewMatrix, projmtx, colorCorrectionRgba);
+                Pose cameraPose = camera.getDisplayOrientedPose();
+                cameraPose.compose(Pose.makeTranslation(0f, 0f, -1f))
+                        .toMatrix(modelViewMatrix, 0);
+                dartRenderer.updateModelMatrix(modelViewMatrix);
+                dartRenderer.draw(viewmtx, projmtx, colorCorrectionRgba);
             }
 
         } catch (Throwable t) {
