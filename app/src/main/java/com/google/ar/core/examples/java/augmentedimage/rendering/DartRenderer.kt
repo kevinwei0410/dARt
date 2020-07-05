@@ -4,6 +4,8 @@ import android.content.Context
 import android.opengl.GLES30
 import com.google.ar.core.Anchor
 import com.google.ar.core.Pose
+import com.google.ar.core.examples.java.augmentedimage.AugmentedImageActivity
+import kotlinx.android.synthetic.main.activity_main.*
 
 class DartRenderer {
     companion object {
@@ -13,7 +15,7 @@ class DartRenderer {
     private val dartRenderer = ObjectRenderer()
 
     fun updateModelMatrix(modelMatrix: FloatArray) {
-        dartRenderer.updateModelMatrix(modelMatrix, 0.05f)
+        dartRenderer.updateModelMatrix(modelMatrix, 0.01f)
     }
 
     fun createOnGlThread(context: Context) {

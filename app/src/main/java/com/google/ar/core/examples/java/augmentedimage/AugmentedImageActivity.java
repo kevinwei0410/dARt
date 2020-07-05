@@ -27,6 +27,7 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
@@ -56,9 +57,14 @@ import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationExceptio
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -293,7 +299,30 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             if (canDrawDart) {
                 float[] modelViewMatrix = new float[16];
                 Pose cameraPose = camera.getDisplayOrientedPose();
-                cameraPose.compose(Pose.makeTranslation(0f, 0f, -1f))
+
+                float[] translation = new float[3];
+                SeekBar[] sb = {
+                        findViewById(R.id.seekBarTranslationX),
+                        findViewById(R.id.seekBarTranslationY),
+                        findViewById(R.id.seekBarTranslationZ)
+                };
+
+                for (int i = 0; i < sb.length; i++)
+                    translation[i] = sb[i].getProgress() / 1000.0f;
+
+                float[] rotation = new float[4];
+                sb = new SeekBar[]{
+                        findViewById(R.id.seekBarRotationX),
+                        findViewById(R.id.seekBarRotationY),
+                        findViewById(R.id.seekBarRotationZ),
+                        findViewById(R.id.seekBarRotationW)
+                };
+
+                for (int i = 0; i < sb.length; i++)
+                    rotation[i] = sb[i].getProgress() / 1000.0f;
+
+
+                cameraPose.compose(new Pose(translation, rotation))
                         .toMatrix(modelViewMatrix, 0);
                 dartRenderer.updateModelMatrix(modelViewMatrix);
                 dartRenderer.draw(viewmtx, projmtx, colorCorrectionRgba);
