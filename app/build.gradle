@@ -18,8 +18,7 @@ android {
     defaultConfig {
         applicationId "com.google.ar.core.examples.java.augmentedimage"
 
-        // 24 is the minimum since ARCore only works with 24 and higher.
-        minSdkVersion 24
+        minSdkVersion 26
         targetSdkVersion 28
         versionCode 1
         versionName setVersionName()
