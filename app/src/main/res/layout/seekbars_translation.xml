@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="8dp"
+    tools:ignore="HardcodedText">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Translation"
+        android:textSize="24sp" />
+
+    <dartcontroller.SeekBarShowValue
+        android:id="@+id/seekBarX"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="X"
+        app:max="300"
+        app:min="-300" />
+
+    <dartcontroller.SeekBarShowValue
+        android:id="@+id/seekBarY"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+
+        android:text="Y"
+        app:max="300"
+        app:min="-300" />
+
+    <dartcontroller.SeekBarShowValue
+        android:id="@+id/seekBarZ"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Z"
+        app:max="500"
+        app:min="-2000"
+        app:progress="-300" />
+
+</LinearLayout>

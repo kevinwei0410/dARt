@@ -27,7 +27,7 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
@@ -57,17 +57,15 @@ import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationExceptio
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
+
+import dartcontroller.SeekBarsRotation;
+import dartcontroller.SeekBarsTranslation;
 
 /**
  * This app extends the HelloAR Java app to include image tracking functionality.
@@ -283,7 +281,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             backgroundRenderer.draw(frame);
 
             float[] projmtx = new float[16];
-            camera.getProjectionMatrix(projmtx, 0, 0.1f, 100.0f);
+            camera.getProjectionMatrix(projmtx, 0, 0.01f, 15.0f);
 
             float[] viewmtx = new float[16];
             camera.getViewMatrix(viewmtx, 0);
@@ -300,29 +298,17 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 float[] modelViewMatrix = new float[16];
                 Pose cameraPose = camera.getDisplayOrientedPose();
 
-                float[] translation = new float[3];
-                SeekBar[] sb = {
-                        findViewById(R.id.seekBarTranslationX),
-                        findViewById(R.id.seekBarTranslationY),
-                        findViewById(R.id.seekBarTranslationZ)
-                };
+                float[] translation = ((SeekBarsTranslation) findViewById(R.id.sbTranslation)).getTranslation();
+                float[] rotation = ((SeekBarsRotation) findViewById(R.id.sbRotation)).getQuaternion();
 
-                for (int i = 0; i < sb.length; i++)
-                    translation[i] = sb[i].getProgress() / 1000.0f;
+                Pose dartPose = new Pose(translation, rotation);
+                Log.d("Dart", dartPose.toString());
 
-                float[] rotation = new float[4];
-                sb = new SeekBar[]{
-                        findViewById(R.id.seekBarRotationX),
-                        findViewById(R.id.seekBarRotationY),
-                        findViewById(R.id.seekBarRotationZ),
-                        findViewById(R.id.seekBarRotationW)
-                };
+                float[] zAxis = dartPose.getZAxis();
+                ((TextView) findViewById(R.id.textViewZAxis))
+                        .setText(getString(R.string.vec3, -zAxis[0], -zAxis[1], -zAxis[2]));
 
-                for (int i = 0; i < sb.length; i++)
-                    rotation[i] = sb[i].getProgress() / 1000.0f;
-
-
-                cameraPose.compose(new Pose(translation, rotation))
+                cameraPose.compose(dartPose)
                         .toMatrix(modelViewMatrix, 0);
                 dartRenderer.updateModelMatrix(modelViewMatrix);
                 dartRenderer.draw(viewmtx, projmtx, colorCorrectionRgba);
@@ -355,7 +341,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                     // When an image is in PAUSED state, but the camera is not PAUSED, it has been detected,
                     // but not yet tracked.
                     String text = String.format("Detected Image %d", augmentedImage.getIndex());
-                    messageSnackbarHelper.showMessage(this, text);
+                    //messageSnackbarHelper.showMessage(this, text);
                     break;
 
                 case TRACKING:
@@ -387,7 +373,6 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             Anchor centerAnchor = augmentedImageMap.get(augmentedImage.getIndex()).second;
             switch (augmentedImage.getTrackingState()) {
                 case TRACKING:
-                    Log.d("Frame", centerAnchor.getPose().toString());
                     augmentedImageRenderer.draw(
                             viewmtx, projmtx, augmentedImage, centerAnchor, colorCorrectionRgba);
                     break;

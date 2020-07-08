@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
    Copyright 2016 Google Inc.
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +14,7 @@
    limitations under the License.
 -->
 <resources>
-  <string name="app_name">AugImg Java</string>
-  <string name="matrix_form">%1$.2f %2$.2f %3$.2f %4$.2f%n
-  %5$.2f %6$.2f %7$.2f %8$.2f%n
-  %9$.2f %10$.2f %11$.2f %12$.2f%n
-  %13$.2f %14$.2f %15$.2f %16$.2f%n</string>
+    <string name="app_name">AugImg Java</string>
+
+    <string name="vec3">[%1$.3f, %2$.3f, %3$.3f]</string>
 </resources>

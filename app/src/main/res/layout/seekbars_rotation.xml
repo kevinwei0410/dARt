@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="8dp"
+    tools:ignore="HardcodedText">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Rotation"
+        android:textSize="24sp" />
+
+    <dartcontroller.SeekBarShowValue
+        android:id="@+id/seekBarX"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="X"
+        app:format="%.2f"
+        app:max="100"
+        app:min="-100"
+        app:precision="0.01" />
+
+    <dartcontroller.SeekBarShowValue
+        android:id="@+id/seekBarY"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Y"
+        app:format="%.2f"
+        app:max="100"
+        app:min="-100"
+        app:precision="0.01" />
+
+    <dartcontroller.SeekBarShowValue
+        android:id="@+id/seekBarZ"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Z"
+        app:format="%.2f"
+        app:max="100"
+        app:min="-100"
+        app:precision="0.01" />
+
+    <dartcontroller.SeekBarShowValue
+        android:id="@+id/seekBarW"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="W"
+        app:format="%.2f"
+        app:max="100"
+        app:min="-100"
+        app:precision="0.01"
+        app:progress="1" />
+
+</LinearLayout>
