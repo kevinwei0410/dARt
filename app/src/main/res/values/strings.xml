@@ -14,7 +14,9 @@
    limitations under the License.
 -->
 <resources>
-    <string name="app_name">AugImg Java</string>
+    <string name="app_name">Dart Jerry</string>
 
     <string name="vec3">[%1$.3f, %2$.3f, %3$.3f]</string>
+    <string name="bugText"></string>
+    <string name="animate_button_text">shoot the dart</string>
 </resources>

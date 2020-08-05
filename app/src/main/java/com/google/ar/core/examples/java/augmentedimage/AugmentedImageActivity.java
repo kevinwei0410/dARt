@@ -27,8 +27,8 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Button;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestManager;
@@ -64,8 +64,7 @@ import java.util.Map;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import dartcontroller.SeekBarsRotation;
-import dartcontroller.SeekBarsTranslation;
+import dartcontroller.Animate;
 
 /**
  * This app extends the HelloAR Java app to include image tracking functionality.
@@ -84,6 +83,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private GLSurfaceView surfaceView;
     private ImageView fitToScanView;
     private RequestManager glideRequestManager;
+    private Button startAnimateButton;
 
     private boolean installRequested;
 
@@ -96,7 +96,12 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private final AugmentedImageRenderer augmentedImageRenderer = new AugmentedImageRenderer();
 
     private final DartRenderer dartRenderer = new DartRenderer();
+    private final DartRenderer animateDart = new DartRenderer();
     private boolean canDrawDart = false;
+    private boolean doAnimate = false;
+    private Animate animate;
+    private int timeStamp;
+
 
     private boolean shouldConfigureSession = false;
 
@@ -107,6 +112,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     // the
     // database.
     private final Map<Integer, Pair<AugmentedImage, Anchor>> augmentedImageMap = new HashMap<>();
+    private final Pose standBy = new Pose(new float[]{-0.3f, 0.3f, -1f}, new float[]{0, 0, 0, 1f});
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,6 +120,9 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
         setContentView(R.layout.activity_main);
         surfaceView = findViewById(R.id.surfaceview);
         displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
+        startAnimateButton = findViewById(R.id.animate_button);
+        ShootTheDart shootTheDart = new ShootTheDart();
+        startAnimateButton.setOnClickListener(shootTheDart);
 
         // Set up renderer.
         surfaceView.setPreserveEGLContextOnPause(true);
@@ -242,6 +251,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             backgroundRenderer.createOnGlThread(/*context=*/ this);
             augmentedImageRenderer.createOnGlThread(/*context=*/ this);
             dartRenderer.createOnGlThread(this);
+            animateDart.createOnGlThread(this);
         } catch (IOException e) {
             Log.e(TAG, "Failed to read an asset file", e);
         }
@@ -295,24 +305,38 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             drawAugmentedImages(frame, projmtx, viewmtx, colorCorrectionRgba);
 
             if (canDrawDart) {
+                timeStamp++;
+                if(timeStamp > 100) timeStamp =0;
                 float[] modelViewMatrix = new float[16];
                 Pose cameraPose = camera.getDisplayOrientedPose();
 
-                float[] translation = ((SeekBarsTranslation) findViewById(R.id.sbTranslation)).getTranslation();
-                float[] rotation = ((SeekBarsRotation) findViewById(R.id.sbRotation)).getQuaternion();
-
-                Pose dartPose = new Pose(translation, rotation);
+                Pose dartPose = new Pose(new float[]{0.1f, 0.1f, -1f}, new float[]{0, 0, 0, 1f});
+                Pose change = new Pose(new float[]{timeStamp * 0.01f,timeStamp * 0.02f, timeStamp * -0.01f}, new float[]{0, 0, 0, 1f});
+                //dartPose.compose(change);
                 Log.d("Dart", dartPose.toString());
-
-                float[] zAxis = dartPose.getZAxis();
-                ((TextView) findViewById(R.id.textViewZAxis))
-                        .setText(getString(R.string.vec3, -zAxis[0], -zAxis[1], -zAxis[2]));
 
                 cameraPose.compose(dartPose)
                         .toMatrix(modelViewMatrix, 0);
                 dartRenderer.updateModelMatrix(modelViewMatrix);
                 dartRenderer.draw(viewmtx, projmtx, colorCorrectionRgba);
+            }else timeStamp = 0;
+            if( canDrawDart){
+
+                float[] modelViewMatrix = new float[16];
+                Pose cameraPose = camera.getDisplayOrientedPose();
+                if(animate.getEndAnimate()){
+                    cameraPose.compose(standBy).compose(animate.getFirstRotate()).compose(animate.getPose())
+                            .toMatrix(modelViewMatrix, 0);
+                }else {
+                    cameraPose.compose(standBy).compose(animate.getFirstRotate())
+                            .toMatrix(modelViewMatrix, 0);
+                }
+
+                animateDart.updateModelMatrix(modelViewMatrix);
+                animateDart.draw(viewmtx, projmtx, colorCorrectionRgba);
+                doAnimate = animate.getEndAnimate();
             }
+
 
         } catch (Throwable t) {
             // Avoid crashing the application due to unhandled exceptions.
@@ -426,5 +450,16 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
         }
         return null;
     }
+
+
+    private class ShootTheDart implements View.OnClickListener{
+        @Override
+        public void onClick(View v) {
+            animate = new Animate(0.02f, new float[]{-5f,10f,0f}, new float[]{0f,2f,0f});
+            animate.startAnimate();
+        }
+    }
+
+
 }
 
