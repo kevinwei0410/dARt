@@ -112,7 +112,8 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     // the
     // database.
     private final Map<Integer, Pair<AugmentedImage, Anchor>> augmentedImageMap = new HashMap<>();
-    private final Pose standBy = new Pose(new float[]{-0.3f, 0.3f, -1f}, new float[]{0, 0, 0, 1f});
+    private final float pitch = 30f / 180f * (float)Math.PI;
+    private final Pose standBy = new Pose(new float[]{0f, 0f, -0.2f}, new float[]{(float)Math.sin(pitch/2), 0, 0, (float)Math.cos(pitch/2)});
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -315,26 +316,24 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 //dartPose.compose(change);
                 Log.d("Dart", dartPose.toString());
 
-                cameraPose.compose(dartPose)
-                        .toMatrix(modelViewMatrix, 0);
+                dartPose.toMatrix(modelViewMatrix, 0);
+
                 dartRenderer.updateModelMatrix(modelViewMatrix);
                 dartRenderer.draw(viewmtx, projmtx, colorCorrectionRgba);
             }else timeStamp = 0;
             if( canDrawDart){
-
                 float[] modelViewMatrix = new float[16];
                 Pose cameraPose = camera.getDisplayOrientedPose();
                 if(animate.getEndAnimate()){
-                    cameraPose.compose(standBy).compose(animate.getFirstRotate()).compose(animate.getPose())
+                    animate.upDatePose();
+                    cameraPose.compose(standBy).compose(animate.getTranslationPose()).compose(animate.getRotationPose())
                             .toMatrix(modelViewMatrix, 0);
                 }else {
-                    cameraPose.compose(standBy).compose(animate.getFirstRotate())
-                            .toMatrix(modelViewMatrix, 0);
+                    cameraPose.compose(standBy).toMatrix(modelViewMatrix, 0);
                 }
-
                 animateDart.updateModelMatrix(modelViewMatrix);
                 animateDart.draw(viewmtx, projmtx, colorCorrectionRgba);
-                doAnimate = animate.getEndAnimate();
+
             }
 
 
@@ -455,7 +454,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private class ShootTheDart implements View.OnClickListener{
         @Override
         public void onClick(View v) {
-            animate = new Animate(0.02f, new float[]{-5f,10f,0f}, new float[]{0f,2f,0f});
+            animate = new Animate( new float[]{10f,0f,-200f}, new float[]{0f,0.5f,0f});
             animate.startAnimate();
         }
     }

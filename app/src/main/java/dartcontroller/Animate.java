@@ -6,7 +6,7 @@ import com.google.ar.core.Pose;
 
 public class Animate {
 
-    private float speed;
+    private float speed = 0.01f;
     // direction is a three float vector
     private float[] direction;
 
@@ -15,7 +15,7 @@ public class Animate {
     private float[] rotationVector;
 
     // max frame set by 60 frame
-    final private int maxFrame = 20000;
+    final private int maxFrame = 2000;
 
     // Number of milliseconds in one second.
     private static final float MILLISECONDS_PER_SECOND = 1000f;
@@ -36,11 +36,13 @@ public class Animate {
 
     private boolean endAnimate ;
 
+    private Pose RotationPose;
 
-    public Animate(float s, float[] d, float[] g){
+    private Pose TranslationPose;
+
+    public Animate( float[] d, float[] g){
         //construct direction speed starting position
-        this.direction = d;
-        this.speed = s;
+        this.direction = new float[]{d[0]*speed, d[1]*speed, d[2]*speed};
         this.gravity = g;
         setQVector();
     }
@@ -54,57 +56,58 @@ public class Animate {
 
     // calculate the new pose with current time
     //
-    public Pose getPose(){
+    public void upDatePose(){
         long deltaT = System.currentTimeMillis() - startAnimateTime;
         float del = (float)deltaT;
         del /= 1000f;
-        float[] translation = {direction[0]*speed*del - gravity[0]*del*del, direction[1]*speed*del - gravity[1]*del*del, direction[2]*speed*del - gravity[2]*del*del};
-        float[] newSpeed = {direction[0] - gravity[0]*del, direction[1] - gravity[1]*del, direction[2] - gravity[2]*del};
-        float[] rotation =getRotation(rotationVector, getTheta(direction, newSpeed ) );
+        float[] translation = {direction[0]*del - gravity[0]*del*del, direction[1]*del - gravity[1]*del*del, direction[2]*del - gravity[2]*del*del};
+        TranslationPose = new Pose(translation, new float[]{0,0,0, 1f});
+        float[] newSpeed = {direction[0]- gravity[0]*del, direction[1] - gravity[1]*del, direction[2] - gravity[2]*del};
+        float tempTheta = getTheta(direction, newSpeed );
+        float[] rotation = getRotation(new float[]{-1,0,0}, getTheta(direction, newSpeed) );
+        RotationPose = new Pose(new float[]{0,0,0}, rotation);
         Log.d("getPose", String.format("%f %f %f %f",translation[0], translation[1], translation[2], del));
-        Log.d("getRotate", String.format("%f %f %f %f",rotation[0], rotation[1], rotation[2], del));
+        Log.d("getRotate", String.format("%f %f %f theta %f %f",rotation[0], rotation[1], rotation[2], tempTheta, rotation[3]));
         if(deltaT >= maxFrame )
         {
             endAnimate = false;
         }else {
             frameCounter++;
+
         }
-        return new Pose(translation, rotation);
     }
 
-    private float getTheta(float[] v1, float[] v2){
+    public float getTheta(float[] v1, float[] v2){
 
         float inner =  v1[0]*v2[0] + v1[1]*v2[1] +v1[2]*v2[2];
         float d1 =(float) Math.sqrt(v1[0]*v1[0] + v1[1]*v1[1] +v1[2]*v1[2]);
         float d2 =(float) Math.sqrt(v2[0]*v2[0] + v2[1]*v2[1] +v2[2]*v2[2]);
         float theta = (float)Math.acos(inner/d1/d2 );
-        if(theta > 180) {
-            return theta -180;
-        }
         return theta;
     }
 
     private void setQVector(){
-
+        float[] newSpeed = {direction[0] - gravity[0]*0.1f, direction[1] - gravity[1]*0.1f, direction[2] - gravity[2]*0.1f};
         float[] v = new float[]{
-                direction[1]*gravity[2] - direction[2]* gravity[1],
-                direction[2]*gravity[0] - direction[0]* gravity[2],
-                direction[0]*gravity[1] - direction[1]* gravity[0]
+                direction[1]*newSpeed[2] - direction[2]* newSpeed[1],
+                direction[2]*newSpeed[0] - direction[0]* newSpeed[2],
+                direction[0]*newSpeed[1] - direction[1]* newSpeed[0]
         };
         float sum = v[0]*v[0] + v[1]*v[1] +v[2]*v[2];
         float norm = (float)Math.sqrt(sum);
+
         rotationVector = new float[]{v[0]/norm, v[1]/norm, v[2]/norm};
+        Log.d("getVector", String.format("%f %f %f %f",rotationVector[0], rotationVector[1], rotationVector[2], norm));
     }
 
-    private float[] getRotation(float[] k, float theta){
-        float x =0f , y=0f,z=0f, w=1f;
+    public float[] getRotation(float[] k, float theta){
+        float x, y, z, w;
         x = k[0]*(float)Math.sin(theta/2);
         y = k[1]*(float)Math.sin(theta/2);
         z = k[2]*(float)Math.sin(theta/2);
         w = (float)Math.cos(theta/2);
         return new float[]{x, y, z, w};
     }
-
 
     public Pose getFirstRotate(){
         float[] g = {0, 0, -1};
@@ -115,10 +118,13 @@ public class Animate {
         };
         float sum = v[0]*v[0] + v[1]*v[1] +v[2]*v[2];
         float norm = (float)Math.sqrt(sum);
-        float[] rotation =getRotation(new float[]{v[0]/norm, v[1]/norm, v[2]/norm}, getTheta(direction, g ) );
+        float[] rotation =getRotation(new float[]{-v[0]/norm, -v[1]/norm, -v[2]/norm}, getTheta(g, direction ) );
+        Log.d("getstartV", String.format("%f %f %f %f",v[0], v[1], v[2], norm));
         return new Pose(new float[]{0,0,0},rotation);
     }
 
+    public Pose getRotationPose(){return RotationPose;}
+    public Pose getTranslationPose(){return TranslationPose;}
     public int getFrameCounter(){return frameCounter;}
     public int getMaxFrame(){return maxFrame;}
     public boolean getEndAnimate(){return endAnimate;}
