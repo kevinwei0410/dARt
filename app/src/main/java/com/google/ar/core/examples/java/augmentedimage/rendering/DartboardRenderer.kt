@@ -13,10 +13,10 @@ class DartboardRenderer {
     }
 
     private val dartboardRenderer = ObjectRenderer()
-    private val dartsOnBoardRenderer = DartsOnBoardRenderer()
+    val dartsOnBoardRenderer = DartsOnBoardRenderer()
 
     fun updateModelMatrix(modelMatrix: FloatArray) {
-        dartboardRenderer.updateModelMatrix(modelMatrix, 0.01f)
+        dartboardRenderer.updateModelMatrix(modelMatrix, 0.005f)
     }
 
     fun createOnGlThread(context: Context) {
@@ -31,10 +31,11 @@ class DartboardRenderer {
             colorCorrectionRgba: FloatArray
     ) {
         dartboardRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
+        dartsOnBoardRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
     }
 }
 
-private class DartsOnBoardRenderer() {
+class DartsOnBoardRenderer() {
     private val poseListLock = ReentrantLock()
     private val poseOfDartsOnBoard = LinkedList<Pose>()
 
@@ -42,7 +43,7 @@ private class DartsOnBoardRenderer() {
     private val modelMatrix = FloatArray(16)
 
     private val autoCleanDartTimer = Timer().apply {
-        schedule(1000, 1000) {
+        schedule(1000, 3000) {
             popDart()
         }
     }

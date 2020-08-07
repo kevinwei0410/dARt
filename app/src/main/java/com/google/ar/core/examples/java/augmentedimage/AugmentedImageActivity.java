@@ -43,6 +43,7 @@ import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.examples.java.augmentedimage.rendering.AugmentedImageRenderer;
 import com.google.ar.core.examples.java.augmentedimage.rendering.DartRenderer;
+import com.google.ar.core.examples.java.augmentedimage.rendering.DartboardRenderer;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
 import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
@@ -64,6 +65,7 @@ import java.util.Map;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import dartboard.Dartboard;
 import dartcontroller.SeekBarsRotation;
 import dartcontroller.SeekBarsTranslation;
 
@@ -96,6 +98,8 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private final AugmentedImageRenderer augmentedImageRenderer = new AugmentedImageRenderer();
 
     private final DartRenderer dartRenderer = new DartRenderer();
+    private Dartboard dartboard = new Dartboard();
+    ;
     private boolean canDrawDart = false;
 
     private boolean shouldConfigureSession = false;
@@ -242,6 +246,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             backgroundRenderer.createOnGlThread(/*context=*/ this);
             augmentedImageRenderer.createOnGlThread(/*context=*/ this);
             dartRenderer.createOnGlThread(this);
+            dartboard.createOnGlThread(this);
         } catch (IOException e) {
             Log.e(TAG, "Failed to read an asset file", e);
         }
@@ -310,6 +315,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
                 cameraPose.compose(dartPose)
                         .toMatrix(modelViewMatrix, 0);
+                dartboard.draw(viewmtx, projmtx, colorCorrectionRgba);
                 dartRenderer.updateModelMatrix(modelViewMatrix);
                 dartRenderer.draw(viewmtx, projmtx, colorCorrectionRgba);
             }
@@ -340,15 +346,14 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 case PAUSED:
                     // When an image is in PAUSED state, but the camera is not PAUSED, it has been detected,
                     // but not yet tracked.
-                    String text = String.format("Detected Image %d", augmentedImage.getIndex());
                     //messageSnackbarHelper.showMessage(this, text);
                     break;
 
                 case TRACKING:
                     // Have to switch to UI Thread to update View.
                     canDrawDart = true;
+                    dartboard.setPose(augmentedImage.getCenterPose());
                     this.runOnUiThread(() -> fitToScanView.setVisibility(View.GONE));
-
                     // Create a new anchor for newly found images.
                     if (!augmentedImageMap.containsKey(augmentedImage.getIndex())) {
                         Anchor centerPoseAnchor = augmentedImage.createAnchor(augmentedImage.getCenterPose());
@@ -367,7 +372,8 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             }
         }
 
-        // Draw all images in augmentedImageMap
+        // Draw all images in
+        /*
         for (Pair<AugmentedImage, Anchor> pair : augmentedImageMap.values()) {
             AugmentedImage augmentedImage = pair.first;
             Anchor centerAnchor = augmentedImageMap.get(augmentedImage.getIndex()).second;
@@ -380,6 +386,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                     break;
             }
         }
+         */
     }
 
     private boolean setupAugmentedImageDatabase(Config config) {

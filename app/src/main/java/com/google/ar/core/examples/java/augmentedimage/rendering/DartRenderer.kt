@@ -28,6 +28,8 @@ class DartRenderer {
             projectionMatrix: FloatArray,
             colorCorrectionRgba: FloatArray
     ) {
+        GLES30.glDisable(GLES30.GL_DEPTH_TEST)
         dartRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
+        GLES30.glEnable(GLES30.GL_DEPTH_TEST)
     }
 }
