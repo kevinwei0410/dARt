@@ -4,9 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.google.ar.core.Pose
 import com.google.ar.core.examples.java.augmentedimage.rendering.DartboardRenderer
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
+import kotlin.math.*
 
 val FloatArray.x
     get() = this[0]
@@ -41,7 +39,7 @@ class Dartboard() {
     companion object {
         val TAG = Dartboard::class.simpleName
         val rotateXAxis90 = Pose(floatArrayOf(0f, 0f, 0f),
-                floatArrayOf(sin(Math.toRadians(-45.0).toFloat()), 0f, 0f, cos(Math.toRadians(45.0).toFloat())))
+                floatArrayOf(sin(Math.toRadians(135.0).toFloat()), 0f, 0f, cos(Math.toRadians(135.0).toFloat())))
         const val GRAVITY = -9.8f
     }
 
@@ -49,9 +47,7 @@ class Dartboard() {
     var pose: Pose = Pose(kotlin.floatArrayOf(0f, 0f, 3f), kotlin.floatArrayOf(0f, 0f, 0f, 1f))
         set(value) {
             field = value.compose(rotateXAxis90)
-
             field.toMatrix(modelMatrix, 0)
-            updateModelMatrix(modelMatrix)
         }
 
     private val renderer = DartboardRenderer()
@@ -74,7 +70,7 @@ class Dartboard() {
      * Unit: meter
      * @param p0 position in world coordinate at time zero
      * @param v0 velocity (vector) at time zero
-     * @return The time (second) when dart hits dartboard
+     * @return The time (second) when dart hits dartboard, negative value if can't hit dartboard
      */
     fun calculateHitTime(p0: FloatArray, v0: FloatArray): Float {
 
@@ -90,28 +86,22 @@ class Dartboard() {
         // b^2 - 4ac
         val discriminant = b * b - 4 * a * c
 
-        if (discriminant < 0) {
-            Log.i(TAG, "hisTest: no intersection")
-            return -1.0f
-        }
+        return when {
+            discriminant < 0 -> -1.0f
+            discriminant == 0.0f -> (-b + sqrt(discriminant)) / (2 * a)
+            discriminant > 0 -> {
+                val sqrtD = sqrt(discriminant)
+                val t1 = (-b + sqrtD) / (2 * a)
+                val t2 = (-b - sqrtD) / (2 * a)
 
-        return sqrt(discriminant).let { sqrtD ->
-            val t1 = (-b + sqrtD) / (2 * a)
-            val t2 = (-b - sqrtD) / (2 * a)
-
-            if (sqrtD < 10E-6)
-                Log.i(TAG, "One intersection t = $t1")
-            else
-                Log.i(TAG, "Two intersection t = ${if (t1 >= 0) t1 else t2}")
-
-            when {
-                t1 >= 0 -> t1
-                t2 >= 0 -> t2
-                else -> {
-                    Log.e(TAG, "Two intersection at negative time!?")
+                if (t1 > 0 && t2 > 0)
+                    min(t1, t2)
+                else if (t1 < 0 && t2 < 0)
                     -1.0f
-                }
+                else
+                    if (t1 > t2) t1 else t2
             }
+            else -> -1.0f
         }
     }
 
@@ -135,6 +125,7 @@ class Dartboard() {
             projectionMatrix: FloatArray,
             colorCorrectionRgba: FloatArray
     ) {
+        updateModelMatrix(modelMatrix)
         renderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
     }
 
