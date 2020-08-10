@@ -16,7 +16,7 @@ class DartboardRenderer {
     val dartsOnBoardRenderer = DartsOnBoardRenderer()
 
     fun updateModelMatrix(modelMatrix: FloatArray) {
-        dartboardRenderer.updateModelMatrix(modelMatrix, 0.005f)
+        dartboardRenderer.updateModelMatrix(modelMatrix, 0.01f)
     }
 
     fun createOnGlThread(context: Context) {
