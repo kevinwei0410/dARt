@@ -1,7 +1,6 @@
-package dartboard
+package game
 
 import android.content.Context
-import android.util.Log
 import com.google.ar.core.Pose
 import com.google.ar.core.examples.java.augmentedimage.rendering.DartboardRenderer
 import kotlin.math.*
@@ -48,6 +47,7 @@ class Dartboard() {
         set(value) {
             field = value.compose(rotateXAxis90)
             field.toMatrix(modelMatrix, 0)
+            updateModelMatrix(modelMatrix)
         }
 
     private val renderer = DartboardRenderer()
@@ -125,7 +125,6 @@ class Dartboard() {
             projectionMatrix: FloatArray,
             colorCorrectionRgba: FloatArray
     ) {
-        updateModelMatrix(modelMatrix)
         renderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
     }
 

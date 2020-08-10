@@ -1,4 +1,4 @@
-package dartboard
+package game
 
 import com.google.ar.core.Pose
 import org.junit.Test
