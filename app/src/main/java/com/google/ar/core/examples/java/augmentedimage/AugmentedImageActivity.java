@@ -19,6 +19,7 @@ package com.google.ar.core.examples.java.augmentedimage;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.opengl.GLES10;
 import android.opengl.GLES20;
 import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
@@ -59,17 +60,17 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.Socket;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.LogRecord;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -94,7 +95,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private GLSurfaceView surfaceView;
     private ImageView fitToScanView;
     private RequestManager glideRequestManager;
-
+    private static Integer count = 0;
     private boolean installRequested;
 
     private Session session;
@@ -112,6 +113,10 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
     private HandlerThread mBackgroundThread;
     private Handler mBackgroundHandler;
+    private Thread receiveThread;
+    public DatagramSocket socket = null;
+    private InetAddress serverAddr;
+    // Get Image view by id
 
     // Augmented image configuration and rendering.
     // Load a single image (true) or a pre-generated image database (false).
@@ -143,13 +148,16 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 .into(fitToScanView);
 
         installRequested = false;
+
+        receiveThread =  new Thread(new ReceiveThread(),"ReceiveThread");
+
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         startBackgroundThread();
-
+        receiveThread.start();
         if (session == null) {
             Exception exception = null;
             String message = null;
@@ -217,6 +225,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     public void onPause() {
         super.onPause();
         stopBackgroundThread();
+        //receiveThread.interrupt();
         if (session != null) {
             // Note that the order matters - GLSurfaceView is paused first so that it does not try
             // to query the session. If Session is paused before GLSurfaceView, GLSurfaceView may
@@ -294,28 +303,21 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
             // If frame is ready, render camera preview image to the GL surface.
             backgroundRenderer.draw(frame);
-
             // Create buffer: allocate memory( 1 pixel = 4 bytes(R, G, B, A))
             ByteBuffer bf = ByteBuffer.allocateDirect(surfaceView.getWidth() * surfaceView.getHeight() * 4);
             // Using nativeOrder to store in buffer (other option: Big Endian / Little Endian)
             bf.order(ByteOrder.nativeOrder());
 
             // Camera view to buffer
-            GLES20.glReadPixels(0, 0, surfaceView.getWidth(), surfaceView.getHeight(),
+            GLES10.glReadPixels(0, 0, surfaceView.getWidth(), surfaceView.getHeight(),
                     GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, bf);
             // Create bitmap
             Bitmap bmp = Bitmap.createBitmap(surfaceView.getWidth(), surfaceView.getHeight(), Bitmap.Config.ARGB_8888);
             bf.rewind();
             // Copy buffer data to bitmap
             bmp.copyPixelsFromBuffer(bf);
-              Log.i("ByteBuffer1", String.valueOf(bf.position()));
-//            // Get Image view by id
-//            ImageView imgView = (ImageView) findViewById(R.id.imageview);
-//            // Set bitmap to image view
-//            imgView.setImageBitmap(bmp);
 
             mBackgroundHandler.post(new SendImageData(bmp));
-
 
 
             float[] projmtx = new float[16];
@@ -481,44 +483,68 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             e.printStackTrace();
         }
     }
-
-    private static class SendImageData implements Runnable {
+    private class SendImageData implements Runnable {
         private Bitmap mBitMap;
-        private Socket mySocket = null;
+        private Bitmap resizeBitMap;
+        private byte[] data = null;
 
         public SendImageData(Bitmap bmp) {
             mBitMap = bmp;
+            resizeBitMap = Bitmap.createScaledBitmap(mBitMap, mBitMap.getWidth()/5, mBitMap.getHeight()/5, true);
         }
+
         @Override
         public void run() {
-            try{
-                if(mySocket == null)
-                {
-                    mySocket = new Socket("140.121.197.164", 4000);
-                    Log.i("Here","123");
+            try {
+                if(serverAddr == null) {
+                    serverAddr = InetAddress.getByName("140.121.196.201");
                 }
-                else
-                {
-                    ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-                    mBitMap.compress(Bitmap.CompressFormat.JPEG, 50, byteStream);
-                    byte[] data = byteStream.toByteArray();
-                    try{
-                        DataOutputStream output = new DataOutputStream( mySocket.getOutputStream() );
-                        output.writeInt(data.length);
-                        Log.i("send_int", String.valueOf(data.length));
-                        output.write(data);
-                        output.flush();
-                    } catch (Exception e) {
-                        Log.i("EEE2", String.valueOf(e));
-                        System.out.println(e.toString());
-                    }
+                if(socket == null) {
+                    socket = new DatagramSocket();
                 }
-            }catch(Exception e)
+
+                ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+                resizeBitMap.compress(Bitmap.CompressFormat.JPEG, 80, byteStream);
+                data = byteStream.toByteArray();
+
+                try {
+                    DatagramPacket packet = new DatagramPacket(data, data.length, serverAddr,5000);
+                    socket.send(packet);
+                } catch (Exception e) {
+                    System.out.println("Error 1:" + e.toString());
+                }
+            } catch (Exception e) {
+                System.out.println("Error 2:"+ e.toString());
+                socket.close();
+            }
+            mBitMap.recycle();
+        }
+    }
+
+    private class ReceiveThread implements Runnable {
+        private byte[] revData = new byte[2048];
+        private DatagramPacket revPacket = new DatagramPacket(revData, revData.length);
+
+        @Override
+        public void run() {
+            if(socket == null) {
+                try {
+                    socket = new DatagramSocket();
+                } catch (SocketException e) {
+                    e.printStackTrace();
+                }
+            }
+            while(true)
             {
-                System.out.println(e.toString());
+                // Receive data
+                try {
+                    socket.receive(revPacket);
+                    Log.i("Server Message: " , new String(revPacket.getData(), 0, revPacket.getLength()));
+
+                } catch (Exception e) {
+                    Log.i("Receive Error", e.toString());
+                }
             }
         }
     }
 }
-
-
