@@ -27,8 +27,8 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.Button;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestManager;
@@ -43,6 +43,7 @@ import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.examples.java.augmentedimage.rendering.AugmentedImageRenderer;
 import com.google.ar.core.examples.java.augmentedimage.rendering.DartRenderer;
+import com.google.ar.core.examples.java.augmentedimage.rendering.DartboardRenderer;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
 import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
@@ -64,7 +65,9 @@ import java.util.Map;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import dartcontroller.Animate;
+import game.Dartboard;
+import dartcontroller.SeekBarsRotation;
+import dartcontroller.SeekBarsTranslation;
 
 /**
  * This app extends the HelloAR Java app to include image tracking functionality.
@@ -83,7 +86,6 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private GLSurfaceView surfaceView;
     private ImageView fitToScanView;
     private RequestManager glideRequestManager;
-    private Button startAnimateButton;
 
     private boolean installRequested;
 
@@ -96,12 +98,9 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private final AugmentedImageRenderer augmentedImageRenderer = new AugmentedImageRenderer();
 
     private final DartRenderer dartRenderer = new DartRenderer();
-    private final DartRenderer animateDart = new DartRenderer();
+    private Dartboard dartboard = new Dartboard();
+    ;
     private boolean canDrawDart = false;
-    private boolean doAnimate = false;
-    private Animate animate;
-    private int timeStamp;
-
 
     private boolean shouldConfigureSession = false;
 
@@ -112,8 +111,6 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     // the
     // database.
     private final Map<Integer, Pair<AugmentedImage, Anchor>> augmentedImageMap = new HashMap<>();
-    private final float pitch = 30f / 180f * (float)Math.PI;
-    private final Pose standBy = new Pose(new float[]{0f, 0f, -0.2f}, new float[]{(float)Math.sin(pitch/2), 0, 0, (float)Math.cos(pitch/2)});
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,9 +118,6 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
         setContentView(R.layout.activity_main);
         surfaceView = findViewById(R.id.surfaceview);
         displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
-        startAnimateButton = findViewById(R.id.animate_button);
-        ShootTheDart shootTheDart = new ShootTheDart();
-        startAnimateButton.setOnClickListener(shootTheDart);
 
         // Set up renderer.
         surfaceView.setPreserveEGLContextOnPause(true);
@@ -252,7 +246,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             backgroundRenderer.createOnGlThread(/*context=*/ this);
             augmentedImageRenderer.createOnGlThread(/*context=*/ this);
             dartRenderer.createOnGlThread(this);
-            animateDart.createOnGlThread(this);
+            dartboard.createOnGlThread(this);
         } catch (IOException e) {
             Log.e(TAG, "Failed to read an asset file", e);
         }
@@ -306,36 +300,25 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             drawAugmentedImages(frame, projmtx, viewmtx, colorCorrectionRgba);
 
             if (canDrawDart) {
-                timeStamp++;
-                if(timeStamp > 100) timeStamp =0;
                 float[] modelViewMatrix = new float[16];
                 Pose cameraPose = camera.getDisplayOrientedPose();
 
-                Pose dartPose = new Pose(new float[]{0.1f, 0.1f, -1f}, new float[]{0, 0, 0, 1f});
-                Pose change = new Pose(new float[]{timeStamp * 0.01f,timeStamp * 0.02f, timeStamp * -0.01f}, new float[]{0, 0, 0, 1f});
-                //dartPose.compose(change);
+                float[] translation = ((SeekBarsTranslation) findViewById(R.id.sbTranslation)).getTranslation();
+                float[] rotation = ((SeekBarsRotation) findViewById(R.id.sbRotation)).getQuaternion();
+
+                Pose dartPose = new Pose(translation, rotation);
                 Log.d("Dart", dartPose.toString());
 
-                dartPose.toMatrix(modelViewMatrix, 0);
+                float[] zAxis = dartPose.getZAxis();
+                ((TextView) findViewById(R.id.textViewZAxis))
+                        .setText(getString(R.string.vec3, -zAxis[0], -zAxis[1], -zAxis[2]));
 
+                cameraPose.compose(dartPose)
+                        .toMatrix(modelViewMatrix, 0);
+                dartboard.draw(viewmtx, projmtx, colorCorrectionRgba);
                 dartRenderer.updateModelMatrix(modelViewMatrix);
                 dartRenderer.draw(viewmtx, projmtx, colorCorrectionRgba);
-            }else timeStamp = 0;
-            if( canDrawDart){
-                float[] modelViewMatrix = new float[16];
-                Pose cameraPose = camera.getDisplayOrientedPose();
-                if(animate.getEndAnimate()){
-                    animate.upDatePose();
-                    cameraPose.compose(standBy).compose(animate.getTranslationPose()).compose(animate.getRotationPose())
-                            .toMatrix(modelViewMatrix, 0);
-                }else {
-                    cameraPose.compose(standBy).toMatrix(modelViewMatrix, 0);
-                }
-                animateDart.updateModelMatrix(modelViewMatrix);
-                animateDart.draw(viewmtx, projmtx, colorCorrectionRgba);
-
             }
-
 
         } catch (Throwable t) {
             // Avoid crashing the application due to unhandled exceptions.
@@ -363,15 +346,14 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 case PAUSED:
                     // When an image is in PAUSED state, but the camera is not PAUSED, it has been detected,
                     // but not yet tracked.
-                    String text = String.format("Detected Image %d", augmentedImage.getIndex());
                     //messageSnackbarHelper.showMessage(this, text);
                     break;
 
                 case TRACKING:
                     // Have to switch to UI Thread to update View.
                     canDrawDart = true;
+                    dartboard.setPose(augmentedImage.getCenterPose());
                     this.runOnUiThread(() -> fitToScanView.setVisibility(View.GONE));
-
                     // Create a new anchor for newly found images.
                     if (!augmentedImageMap.containsKey(augmentedImage.getIndex())) {
                         Anchor centerPoseAnchor = augmentedImage.createAnchor(augmentedImage.getCenterPose());
@@ -390,7 +372,8 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             }
         }
 
-        // Draw all images in augmentedImageMap
+        // Draw all images in
+        /*
         for (Pair<AugmentedImage, Anchor> pair : augmentedImageMap.values()) {
             AugmentedImage augmentedImage = pair.first;
             Anchor centerAnchor = augmentedImageMap.get(augmentedImage.getIndex()).second;
@@ -403,6 +386,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                     break;
             }
         }
+         */
     }
 
     private boolean setupAugmentedImageDatabase(Config config) {
@@ -449,16 +433,5 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
         }
         return null;
     }
-
-
-    private class ShootTheDart implements View.OnClickListener{
-        @Override
-        public void onClick(View v) {
-            animate = new Animate( new float[]{10f,0f,-200f}, new float[]{0f,0.5f,0f});
-            animate.startAnimate();
-        }
-    }
-
-
 }
 
