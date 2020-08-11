@@ -40,4 +40,11 @@
         app:min="-2000"
         app:progress="-300" />
 
+    <Button
+        android:id="@+id/shootBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Shoot"
+        android:textAllCaps="false"/>
+
 </LinearLayout>
