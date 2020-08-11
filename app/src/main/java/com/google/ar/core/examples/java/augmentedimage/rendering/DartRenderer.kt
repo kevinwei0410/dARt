@@ -1,11 +1,6 @@
 package com.google.ar.core.examples.java.augmentedimage.rendering
 
 import android.content.Context
-import android.opengl.GLES30
-import com.google.ar.core.Anchor
-import com.google.ar.core.Pose
-import com.google.ar.core.examples.java.augmentedimage.AugmentedImageActivity
-import kotlinx.android.synthetic.main.activity_main.*
 
 class DartRenderer {
     companion object {
@@ -28,8 +23,6 @@ class DartRenderer {
             projectionMatrix: FloatArray,
             colorCorrectionRgba: FloatArray
     ) {
-        GLES30.glDisable(GLES30.GL_DEPTH_TEST)
         dartRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
-        GLES30.glEnable(GLES30.GL_DEPTH_TEST)
     }
 }
