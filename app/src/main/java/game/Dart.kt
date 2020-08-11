@@ -1,20 +1,21 @@
 package game
 
 import android.content.Context
-import android.opengl.GLES30
 import com.google.ar.core.Pose
 import com.google.ar.core.examples.java.augmentedimage.rendering.DartRenderer
-import com.google.ar.core.examples.java.augmentedimage.rendering.ObjectRenderer
 
 
-class Dart(private val pose: Pose = Pose(DART_POSITION, DART_ROTATION)) {
+class Dart(val standbyPose: Pose = Pose(DART_POSITION, DART_ROTATION)) {
     companion object {
         val DART_POSITION = floatArrayOf(0.022f, -0.018f, -0.15f)
         val DART_ROTATION = floatArrayOf(0f, 0f, 0f, 1f)
     }
 
-    val direction
-        get() = floatArrayOf(-pose.zAxis[0], -pose.zAxis[1], -pose.zAxis[2])
+    val position: FloatArray
+        get() = standbyPose.translation
+    val direction: FloatArray
+        get() = floatArrayOf(-standbyPose.zAxis[0], -standbyPose.zAxis[1], -standbyPose.zAxis[2])
+
 
 
     private val renderer = DartRenderer()
