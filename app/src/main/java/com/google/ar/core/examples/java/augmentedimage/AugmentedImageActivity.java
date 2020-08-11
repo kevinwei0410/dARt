@@ -28,7 +28,6 @@ import android.util.Pair;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
@@ -43,8 +42,6 @@ import com.google.ar.core.Frame;
 import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.examples.java.augmentedimage.rendering.AugmentedImageRenderer;
-import com.google.ar.core.examples.java.augmentedimage.rendering.DartRenderer;
-import com.google.ar.core.examples.java.augmentedimage.rendering.DartboardRenderer;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
 import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
@@ -66,10 +63,6 @@ import java.util.Map;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import dartcontroller.Animate;
-import game.Dartboard;
-import dartcontroller.SeekBarsRotation;
-import dartcontroller.SeekBarsTranslation;
 import game.Game;
 
 /**
@@ -141,7 +134,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
         shootBtn = findViewById(R.id.shootBtn);
         shootBtn.setOnClickListener(v -> {
-            game.shootDart(cameraPose);
+            game.shootDart(cameraPose, 2.3f);
         });
     }
 

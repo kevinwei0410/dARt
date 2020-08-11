@@ -53,7 +53,7 @@ public class Animate {
     public Animate(float speed, Pose p) {
         //construct direction speed starting position
         this.speed = speed;
-        this.direction = new float[]{0, 0, -1f * speed * 0.01f};
+        this.direction = new float[]{0, 0, -1f * speed};
         setStartingCameraPose(p);
     }
 

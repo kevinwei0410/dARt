@@ -3,7 +3,10 @@ package game
 import android.content.Context
 import com.google.ar.core.Pose
 import com.google.ar.core.examples.java.augmentedimage.rendering.DartboardRenderer
-import kotlin.math.*
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 val FloatArray.x
     get() = this[0]
@@ -40,6 +43,9 @@ class Dartboard() {
         val rotateXAxis90 = Pose(floatArrayOf(0f, 0f, 0f),
                 floatArrayOf(sin(Math.toRadians(135.0).toFloat()), 0f, 0f, cos(Math.toRadians(135.0).toFloat())))
         const val GRAVITY = -9.8f
+        private const val modelRadius = 26.7f // model unit
+        const val STANDARD_RADIUS = 0.2265f // meter
+        const val scaleRate = STANDARD_RADIUS / modelRadius
     }
 
     // Pose of augmented image is z pointed down, x pointed right
@@ -50,7 +56,7 @@ class Dartboard() {
             updateModelMatrix(modelMatrix)
         }
 
-    private val renderer = DartboardRenderer()
+    private val renderer = DartboardRenderer(scaleRate)
     private val modelMatrix = FloatArray(16)
 
     /**

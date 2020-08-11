@@ -1,13 +1,14 @@
 package com.google.ar.core.examples.java.augmentedimage.rendering
 
 import android.content.Context
+import android.opengl.GLES30
 import com.google.ar.core.Pose
 import java.lang.Exception
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.schedule
 
-class DartboardRenderer {
+class DartboardRenderer(private val modelScaleRate: Float) {
     companion object {
         internal val TAG = DartboardRenderer::class.simpleName!!
     }
@@ -16,7 +17,7 @@ class DartboardRenderer {
     val dartsOnBoardRenderer = DartsOnBoardRenderer()
 
     fun updateModelMatrix(modelMatrix: FloatArray) {
-        dartboardRenderer.updateModelMatrix(modelMatrix, 0.01f)
+        dartboardRenderer.updateModelMatrix(modelMatrix, modelScaleRate)
     }
 
     fun createOnGlThread(context: Context) {
@@ -30,6 +31,7 @@ class DartboardRenderer {
             projectionMatrix: FloatArray,
             colorCorrectionRgba: FloatArray
     ) {
+        GLES30.glEnable(GLES30.GL_DEPTH_TEST)
         dartboardRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
         dartsOnBoardRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
     }
