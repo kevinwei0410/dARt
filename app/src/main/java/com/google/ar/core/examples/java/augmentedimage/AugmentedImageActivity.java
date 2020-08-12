@@ -313,9 +313,9 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 //                game.getDart().setStandbyPose(dartPose);
 //                Pose dartPoseInCamera = cameraPose.compose(dartPose);
 
-                Pose dartPoseInCamera = cameraPose.compose(game.getDart().getStandbyPose());
+                Pose dartPoseInWorld = cameraPose.compose(game.getDart().getStandbyPose());
 
-                dartPoseInCamera.toMatrix(modelViewMatrix, 0);
+                dartPoseInWorld.toMatrix(modelViewMatrix, 0);
                 game.getDart().updateModelMatrix(modelViewMatrix);
                 game.draw(viewmtx, projmtx, colorCorrectionRgba);
             }
