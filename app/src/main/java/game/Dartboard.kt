@@ -34,7 +34,7 @@ fun FloatArray.minus(other: FloatArray): FloatArray {
  *   dart's initial pose & initial velocity
  */
 
-class Dartboard() {
+class Dartboard {
     companion object {
         val TAG = Dartboard::class.simpleName
         val rotateXAxis90 = Pose(floatArrayOf(0f, 0f, 0f),
@@ -90,9 +90,9 @@ class Dartboard() {
         val discriminant = b * b - 4 * a * c
 
         return when {
-            discriminant < 0 -> -1.0f
+            discriminant <  0.0f -> -1.0f
             discriminant == 0.0f -> (-b + sqrt(discriminant)) / (2 * a)
-            discriminant > 0 -> {
+            discriminant >  0.0f -> {
                 val sqrtD = sqrt(discriminant)
                 val t1 = (-b + sqrtD) / (2 * a)
                 val t2 = (-b - sqrtD) / (2 * a)
@@ -114,9 +114,10 @@ class Dartboard() {
         val zt = p0.z + v0.z * deltaTime
 
 
-        return floatArrayOf(xt, yt, zt).foldIndexed(0f) { index, acc, value ->
-            acc + (value - pose.translation[index]).pow(2)
-        }.run { sqrt(this) }
+        return sqrt((pose.translation[0] - xt).pow(2) +
+                (pose.translation[1] - yt).pow(2) +
+                (pose.translation[2] - zt).pow(2)
+        )
     }
 
     /**
