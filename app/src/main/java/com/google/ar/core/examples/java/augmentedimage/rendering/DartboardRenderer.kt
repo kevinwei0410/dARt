@@ -2,6 +2,7 @@ package com.google.ar.core.examples.java.augmentedimage.rendering
 
 import android.content.Context
 import android.opengl.GLES30
+import android.util.Log
 import com.google.ar.core.Pose
 import java.lang.Exception
 import java.util.*
@@ -38,6 +39,10 @@ class DartboardRenderer(private val modelScaleRate: Float) {
 }
 
 class DartsOnBoardRenderer() {
+    companion object {
+        private val TAG = DartsOnBoardRenderer::class::simpleName.get()
+    }
+
     private val poseListLock = ReentrantLock()
     private val poseOfDartsOnBoard = LinkedList<Pose>()
 
@@ -45,7 +50,7 @@ class DartsOnBoardRenderer() {
     private val modelMatrix = FloatArray(16)
 
     private val autoCleanDartTimer = Timer().apply {
-        schedule(1000, 3000) {
+        schedule(1000, 1500) {
             popDart()
         }
     }
@@ -57,8 +62,11 @@ class DartsOnBoardRenderer() {
     fun addDart(pose: Pose) {
         poseListLock.lock()
         try {
+            Log.i(TAG, "New darts hits board")
             poseOfDartsOnBoard.add(pose)
         } catch (e: Exception) {
+
+        } finally {
             poseListLock.unlock()
         }
     }
@@ -66,8 +74,10 @@ class DartsOnBoardRenderer() {
     private fun popDart() {
         poseListLock.lock()
         try {
-            poseOfDartsOnBoard.pop()
+            poseOfDartsOnBoard.poll()
         } catch (e: Exception) {
+
+        } finally {
             poseListLock.unlock()
         }
     }
@@ -85,6 +95,8 @@ class DartsOnBoardRenderer() {
                 dartRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
             }
         } catch (e: Exception) {
+
+        } finally {
             poseListLock.unlock()
         }
     }
