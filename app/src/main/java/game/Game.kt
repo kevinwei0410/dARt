@@ -6,6 +6,14 @@ import com.google.ar.core.Pose
 import com.google.ar.core.examples.java.augmentedimage.rendering.DartRenderer
 import dartcontroller.Animate
 import java.util.*
+import kotlin.math.pow
+import kotlin.math.sqrt
+
+fun FloatArray.distanceTo(other: FloatArray): Float {
+    return sqrt((this[0] - other[0]).pow(2) +
+            (this[1] - other[1]).pow(2) +
+            (this[2] - other[2]).pow(2))
+}
 
 class Game {
     companion object {
@@ -13,8 +21,8 @@ class Game {
     }
 
     val dart = Dart()
-    private val flyingDart = FlyingDart()
     val dartboard = Dartboard()
+    private val flyingDart = FlyingDart(dartboard)
 
 
     fun shootDart(cameraPose: Pose, speed: Float = 2.3f) {
@@ -24,18 +32,16 @@ class Game {
         val v0 = dartPoseInWorld.zAxis.map { -it * speed }.toFloatArray()
 
         // ETA to dartboard *plane*, not dartboard per se
-        var distanceToDartboardCenter = Float.MAX_VALUE
         val ETA = dartboard.calculateHitTime(p0, v0)
-                .run {
-                    distanceToDartboardCenter = dartboard.calculateDistanceToDartboardCenter(p0, v0, this)
-                    (this * 1000).toLong()
-                } // in millis
+        val distanceToDartboardCenter = dartboard.pose.translation.distanceTo(
+                Animate(speed, cameraPose.compose(dart.standbyPose)).calculatePose(ETA).translation)
 
-        Log.i(TAG, "dart shot, ETA: $ETA millis")
+        Log.i(TAG, "dart shot, ETA: $ETA seconds")
         Log.i(TAG, "Distance to dartboard center: $distanceToDartboardCenter")
 
         if (ETA > 0.0f) {
-            flyingDart.addDart(System.currentTimeMillis(), cameraPose, dart.standbyPose, speed)
+            val isHit = distanceToDartboardCenter < Dartboard.STANDARD_RADIUS
+            flyingDart.addDart(System.currentTimeMillis(), cameraPose, dart.standbyPose, speed, ETA, isHit)
         }
     }
 
@@ -60,16 +66,18 @@ class Game {
     }
 }
 
-class FlyingDart {
+class FlyingDart(private val dartboard: Dartboard) {
     data class DartInitialState(val t0InMillis: Long,
                                 val cameraPose: Pose,
-                                val dartPoseInWorld: Pose,
-                                val speed: Float) {
-        val animate = Animate(speed, cameraPose.compose(dartPoseInWorld))
+                                val dartPoseInCamera: Pose,
+                                val speed: Float,
+                                val ETA: Float,
+                                val isHit: Boolean) {
+        val animate = Animate(speed, cameraPose.compose(dartPoseInCamera))
     }
 
-    fun addDart(t0InMillis: Long, cameraPose: Pose, dartPoseInWorld: Pose, speed: Float) {
-        dartInitialStates.add(DartInitialState(t0InMillis, cameraPose, dartPoseInWorld, speed))
+    fun addDart(t0InMillis: Long, cameraPose: Pose, dartPoseInWorld: Pose, speed: Float, ETA: Float, isHit: Boolean) {
+        dartInitialStates.add(DartInitialState(t0InMillis, cameraPose, dartPoseInWorld, speed, ETA, isHit))
     }
 
     private val dartInitialStates = LinkedList<DartInitialState>()
@@ -92,7 +100,16 @@ class FlyingDart {
             val dartInitialState = iterator.next()
             val deltaT = (System.currentTimeMillis() - dartInitialState.t0InMillis) / 1000.0f // in second
 
-            if (deltaT > 3) {
+            if (deltaT >= dartInitialState.ETA) {
+                if (dartInitialState.isHit) {
+                    with(dartInitialState) {
+                        val poseOnBoard = animate.calculatePose(ETA)
+                        dartboard.addDart(poseOnBoard)
+                    }
+                }
+                iterator.remove()
+                continue
+            } else if (deltaT > 10) {
                 iterator.remove()
                 continue
             }
