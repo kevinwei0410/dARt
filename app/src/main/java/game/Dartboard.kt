@@ -3,10 +3,7 @@ package game
 import android.content.Context
 import com.google.ar.core.Pose
 import com.google.ar.core.examples.java.augmentedimage.rendering.DartboardRenderer
-import kotlin.math.cos
-import kotlin.math.min
-import kotlin.math.sin
-import kotlin.math.sqrt
+import kotlin.math.*
 
 val FloatArray.x
     get() = this[0]
@@ -109,6 +106,17 @@ class Dartboard() {
             }
             else -> -1.0f
         }
+    }
+
+    fun calculateDistanceToDartboardCenter(p0: FloatArray, v0: FloatArray, deltaTime: Float): Float {
+        val xt = p0.x + v0.x * deltaTime
+        val yt = p0.y + v0.y * deltaTime + 0.5f * GRAVITY * deltaTime * deltaTime
+        val zt = p0.z + v0.z * deltaTime
+
+
+        return floatArrayOf(xt, yt, zt).foldIndexed(0f) { index, acc, value ->
+            acc + (value - pose.translation[index]).pow(2)
+        }.run { sqrt(this) }
     }
 
     /**
