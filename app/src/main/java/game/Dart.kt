@@ -7,6 +7,7 @@ import com.google.ar.core.examples.java.augmentedimage.rendering.DartRenderer
 
 class Dart(val standbyPose: Pose = Pose(DART_POSITION, DART_ROTATION)) {
     companion object {
+        // relative to camera
         val DART_POSITION = floatArrayOf(0.022f, -0.018f, -0.15f)
         val DART_ROTATION = floatArrayOf(0f, 0f, 0f, 1f)
     }
