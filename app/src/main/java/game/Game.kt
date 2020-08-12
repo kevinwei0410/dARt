@@ -18,16 +18,23 @@ class Game {
 
 
     fun shootDart(cameraPose: Pose, speed: Float = 2.3f) {
+        val dartPoseInWorld = cameraPose.compose(dart.standbyPose)
+
+        val p0 = dartPoseInWorld.translation
+        val v0 = dartPoseInWorld.zAxis.map { -it * speed }.toFloatArray()
 
         // ETA to dartboard *plane*, not dartboard per se
-        val ETA = dartboard.calculateHitTime(dart.position, dart.direction.map { it * speed }.toFloatArray())
+        var distanceToDartboardCenter = Float.MAX_VALUE
+        val ETA = dartboard.calculateHitTime(p0, v0)
                 .run {
+                    distanceToDartboardCenter = dartboard.calculateDistanceToDartboardCenter(p0, v0, this)
                     (this * 1000).toLong()
                 } // in millis
 
+        Log.i(TAG, "dart shot, ETA: $ETA millis")
+        Log.i(TAG, "Distance to dartboard center: $distanceToDartboardCenter")
 
         if (ETA > 0.0f) {
-            Log.i(TAG, "dart shot, ETA: $ETA millis")
             flyingDart.addDart(System.currentTimeMillis(), cameraPose, dart.standbyPose, speed)
         }
     }
