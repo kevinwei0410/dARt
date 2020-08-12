@@ -30,8 +30,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
@@ -46,7 +46,6 @@ import com.google.ar.core.Frame;
 import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.examples.java.augmentedimage.rendering.AugmentedImageRenderer;
-import com.google.ar.core.examples.java.augmentedimage.rendering.DartRenderer;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
 import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
@@ -75,8 +74,7 @@ import java.util.Map;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import dartcontroller.SeekBarsRotation;
-import dartcontroller.SeekBarsTranslation;
+import game.Game;
 
 /**
  * This app extends the HelloAR Java app to include image tracking functionality.
@@ -106,7 +104,10 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private final BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
     private final AugmentedImageRenderer augmentedImageRenderer = new AugmentedImageRenderer();
 
-    private final DartRenderer dartRenderer = new DartRenderer();
+    private final Game game = new Game();
+    private Pose cameraPose;
+    private Button shootBtn;
+
     private boolean canDrawDart = false;
 
     private boolean shouldConfigureSession = false;
@@ -149,7 +150,15 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
         installRequested = false;
 
-        receiveThread =  new Thread(new ReceiveThread(),"ReceiveThread");
+
+
+
+
+
+
+
+
+
 
     }
 
@@ -265,7 +274,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             // Create the texture and pass it to ARCore session to be filled during update().
             backgroundRenderer.createOnGlThread(/*context=*/ this);
             augmentedImageRenderer.createOnGlThread(/*context=*/ this);
-            dartRenderer.createOnGlThread(this);
+            game.createOnGlThread(this);
         } catch (IOException e) {
             Log.e(TAG, "Failed to read an asset file", e);
         }
@@ -336,22 +345,22 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
             if (canDrawDart) {
                 float[] modelViewMatrix = new float[16];
-                Pose cameraPose = camera.getDisplayOrientedPose();
+                cameraPose = camera.getDisplayOrientedPose();
 
-                float[] translation = ((SeekBarsTranslation) findViewById(R.id.sbTranslation)).getTranslation();
-                float[] rotation = ((SeekBarsRotation) findViewById(R.id.sbRotation)).getQuaternion();
 
-                Pose dartPose = new Pose(translation, rotation);
-                Log.d("Dart", dartPose.toString());
+//                float[] translation = ((SeekBarsTranslation) findViewById(R.id.sbTranslation)).getTranslation();
+//                float[] rotation = ((SeekBarsRotation) findViewById(R.id.sbRotation)).getQuaternion();
 
-                float[] zAxis = dartPose.getZAxis();
-                ((TextView) findViewById(R.id.textViewZAxis))
-                        .setText(getString(R.string.vec3, -zAxis[0], -zAxis[1], -zAxis[2]));
 
-                cameraPose.compose(dartPose)
-                        .toMatrix(modelViewMatrix, 0);
-                dartRenderer.updateModelMatrix(modelViewMatrix);
-                dartRenderer.draw(viewmtx, projmtx, colorCorrectionRgba);
+//                Pose dartPose = new Pose(translation, rotation);
+//                game.getDart().setStandbyPose(dartPose);
+//                Pose dartPoseInCamera = cameraPose.compose(dartPose);
+
+                Pose dartPoseInCamera = cameraPose.compose(game.getDart().getStandbyPose());
+
+                dartPoseInCamera.toMatrix(modelViewMatrix, 0);
+                game.getDart().updateModelMatrix(modelViewMatrix);
+                game.draw(viewmtx, projmtx, colorCorrectionRgba);
             }
 
         } catch (Throwable t) {
@@ -380,15 +389,14 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 case PAUSED:
                     // When an image is in PAUSED state, but the camera is not PAUSED, it has been detected,
                     // but not yet tracked.
-                    String text = String.format("Detected Image %d", augmentedImage.getIndex());
                     //messageSnackbarHelper.showMessage(this, text);
                     break;
 
                 case TRACKING:
                     // Have to switch to UI Thread to update View.
                     canDrawDart = true;
+                    game.updateDartboardPose(augmentedImage.getCenterPose());
                     this.runOnUiThread(() -> fitToScanView.setVisibility(View.GONE));
-
                     // Create a new anchor for newly found images.
                     if (!augmentedImageMap.containsKey(augmentedImage.getIndex())) {
                         Anchor centerPoseAnchor = augmentedImage.createAnchor(augmentedImage.getCenterPose());
@@ -407,7 +415,8 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             }
         }
 
-        // Draw all images in augmentedImageMap
+        // Draw all images in
+        /*
         for (Pair<AugmentedImage, Anchor> pair : augmentedImageMap.values()) {
             AugmentedImage augmentedImage = pair.first;
             Anchor centerAnchor = augmentedImageMap.get(augmentedImage.getIndex()).second;
@@ -420,6 +429,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                     break;
             }
         }
+         */
     }
 
     private boolean setupAugmentedImageDatabase(Config config) {
