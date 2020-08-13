@@ -94,7 +94,6 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private final AugmentedImageRenderer augmentedImageRenderer = new AugmentedImageRenderer();
 
     private final Game game = new Game();
-    private Pose cameraPose;
     private Button shootBtn;
 
     private boolean canDrawDart = false;
@@ -134,7 +133,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
         shootBtn = findViewById(R.id.shootBtn);
         shootBtn.setOnClickListener(v -> {
-            game.shootDart(cameraPose, 2.3f);
+            game.shootDart(2.3f);
         });
     }
 
@@ -302,7 +301,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
             if (canDrawDart) {
                 float[] modelViewMatrix = new float[16];
-                cameraPose = camera.getDisplayOrientedPose();
+                game.cameraPose = camera.getDisplayOrientedPose();
 
 
 //                float[] translation = ((SeekBarsTranslation) findViewById(R.id.sbTranslation)).getTranslation();
@@ -313,7 +312,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 //                game.getDart().setStandbyPose(dartPose);
 //                Pose dartPoseInCamera = cameraPose.compose(dartPose);
 
-                Pose dartPoseInWorld = cameraPose.compose(game.getDart().getStandbyPose());
+                Pose dartPoseInWorld = game.cameraPose.compose(game.getDart().getStandbyPose());
 
                 dartPoseInWorld.toMatrix(modelViewMatrix, 0);
                 game.getDart().updateModelMatrix(modelViewMatrix);

@@ -20,12 +20,13 @@ class Game {
         val TAG = Game::class.simpleName
     }
 
+    lateinit var cameraPose: Pose
     val dart = Dart()
     val dartboard = Dartboard()
     private val flyingDart = FlyingDart(dartboard)
 
 
-    fun shootDart(cameraPose: Pose, speed: Float = 2.3f) {
+    fun shootDart(speed: Float = 2.3f) {
         val dartPoseInWorld = cameraPose.compose(dart.standbyPose)
 
         val p0 = dartPoseInWorld.translation
