@@ -149,17 +149,12 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 .into(fitToScanView);
 
         installRequested = false;
+        shootBtn = findViewById(R.id.shootBtn);
+        shootBtn.setOnClickListener(v -> {
+            game.shootDart(cameraPose, 10f);
+        });
 
-
-
-
-
-
-
-
-
-
-
+        receiveThread =  new Thread(new ReceiveThread(),"ReceiveThread");
     }
 
     @Override
@@ -500,7 +495,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
         public SendImageData(Bitmap bmp) {
             mBitMap = bmp;
-            resizeBitMap = Bitmap.createScaledBitmap(mBitMap, mBitMap.getWidth()/5, mBitMap.getHeight()/5, true);
+            resizeBitMap = Bitmap.createScaledBitmap(mBitMap, mBitMap.getWidth()/10, mBitMap.getHeight()/10, true);
         }
 
         @Override
@@ -516,9 +511,9 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
                 resizeBitMap.compress(Bitmap.CompressFormat.JPEG, 80, byteStream);
                 data = byteStream.toByteArray();
-
                 try {
                     DatagramPacket packet = new DatagramPacket(data, data.length, serverAddr,5000);
+                    Log.i("data length", String.valueOf(data.length));
                     socket.send(packet);
                 } catch (Exception e) {
                     System.out.println("Error 1:" + e.toString());
@@ -549,7 +544,11 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 // Receive data
                 try {
                     socket.receive(revPacket);
-                    Log.i("Server Message: " , new String(revPacket.getData(), 0, revPacket.getLength()));
+                    String msg = new String(revPacket.getData(), 0, revPacket.getLength());
+                    Log.i("Server Message", msg);
+                    if (msg.equals("shoot")){
+                        game.shootDart(cameraPose, 2.3f);
+                    }
 
                 } catch (Exception e) {
                     Log.i("Receive Error", e.toString());
