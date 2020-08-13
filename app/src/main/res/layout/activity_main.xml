@@ -23,8 +23,7 @@
     <FrameLayout
         android:id="@+id/cameraFrame"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        app:layout_constraintDimensionRatio="W,4:3"
+        android:layout_height="match_parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -42,43 +41,4 @@
             android:layout_gravity="center"
             android:scaleType="fitCenter" />
     </FrameLayout>
-
-    <TextView
-        android:id="@+id/textViewZAxis"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="0dp"
-        android:gravity="center"
-        android:padding="0dp"
-        android:text="@string/vec3"
-        android:textSize="18sp"
-        app:layout_constraintBottom_toTopOf="@id/dartControlPanel"
-        app:layout_constraintTop_toBottomOf="@id/cameraFrame" />
-
-    <LinearLayout
-        android:id="@+id/dartControlPanel"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:orientation="horizontal"
-        android:paddingVertical="8dp"
-        android:weightSum="1.0"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/textViewZAxis">
-
-
-        <dartcontroller.SeekBarsTranslation
-            android:id="@+id/sbTranslation"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.5" />
-
-        <dartcontroller.SeekBarsRotation
-            android:id="@+id/sbRotation"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="0.5" />
-    </LinearLayout>
-
 </android.support.constraint.ConstraintLayout>

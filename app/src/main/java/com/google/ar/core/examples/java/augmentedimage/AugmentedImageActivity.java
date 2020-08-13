@@ -100,7 +100,6 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
     private final Game game = new Game();
     private SocketConnection conn = new SocketConnection(game);
-    private Button shootBtn;
     private boolean canDrawDart = false;
 
     private boolean shouldConfigureSession = false;
@@ -138,11 +137,6 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 .into(fitToScanView);
 
         installRequested = false;
-        shootBtn = findViewById(R.id.shootBtn);
-        shootBtn.setOnClickListener(v -> {
-            game.shootDart(10f);
-            game.shootDart(10f);
-        });
 
         conn.receiveThread = new Thread(conn.new ReceiveThread(), "ReceiveThread");
     }

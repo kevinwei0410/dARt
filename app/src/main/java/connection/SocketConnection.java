@@ -101,7 +101,7 @@ public class SocketConnection {
                     socket.receive(revPacket);
                     float velocity = ByteBuffer.wrap(revPacket.getData()).order(ByteOrder.BIG_ENDIAN).getFloat();
                     Log.i("Server Message", String.valueOf(velocity));
-                    game.shootDart((5*velocity)+10);
+                    game.shootDart((10*velocity)+5);
 
 
                 } catch (Exception e) {
