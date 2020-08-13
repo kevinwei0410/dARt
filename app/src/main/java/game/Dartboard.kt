@@ -90,9 +90,9 @@ class Dartboard {
         val discriminant = b * b - 4 * a * c
 
         return when {
-            discriminant <  0.0f -> -1.0f
+            discriminant < 0.0f -> -1.0f
             discriminant == 0.0f -> (-b + sqrt(discriminant)) / (2 * a)
-            discriminant >  0.0f -> {
+            discriminant > 0.0f -> {
                 val sqrtD = sqrt(discriminant)
                 val t1 = (-b + sqrtD) / (2 * a)
                 val t2 = (-b - sqrtD) / (2 * a)
@@ -108,27 +108,10 @@ class Dartboard {
         }
     }
 
-    fun calculateDistanceToDartboardCenter(p0: FloatArray, v0: FloatArray, deltaTime: Float): Float {
-        val xt = p0.x + v0.x * deltaTime
-        val yt = p0.y + v0.y * deltaTime + 0.5f * GRAVITY * deltaTime * deltaTime
-        val zt = p0.z + v0.z * deltaTime
-
-
-        return sqrt((pose.translation[0] - xt).pow(2) +
-                (pose.translation[1] - yt).pow(2) +
-                (pose.translation[2] - zt).pow(2)
-        )
-    }
-
     /**
      * Dart you add will be draw at the pose you given (world coordinate)
      */
-    fun addDart(pose: Pose) = renderer.dartsOnBoardRenderer.addDart(pose)
-
-    val normalVector: FloatArray
-        get() = pose.zAxis
-    val positionInWorldSpace: FloatArray
-        get() = pose.translation
+    fun addDart(pose: DartOnDartBoard) = renderer.dartsOnBoardRenderer.addDart(pose)
 
     private fun updateModelMatrix(modelMatrix: FloatArray) = renderer.updateModelMatrix(modelMatrix)
     fun createOnGlThread(context: Context) {
@@ -140,7 +123,10 @@ class Dartboard {
             projectionMatrix: FloatArray,
             colorCorrectionRgba: FloatArray
     ) {
-        renderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
+        renderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, pose)
     }
 
 }
+
+data class DartOnDartBoard(val poseInDartboard: Pose,
+                           val cleanTime: Long)
