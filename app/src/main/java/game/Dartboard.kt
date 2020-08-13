@@ -3,10 +3,7 @@ package game
 import android.content.Context
 import com.google.ar.core.Pose
 import com.google.ar.core.examples.java.augmentedimage.rendering.DartboardRenderer
-import kotlin.math.cos
-import kotlin.math.min
-import kotlin.math.sin
-import kotlin.math.sqrt
+import kotlin.math.*
 
 val FloatArray.x
     get() = this[0]
@@ -37,7 +34,7 @@ fun FloatArray.minus(other: FloatArray): FloatArray {
  *   dart's initial pose & initial velocity
  */
 
-class Dartboard() {
+class Dartboard {
     companion object {
         val TAG = Dartboard::class.simpleName
         val rotateXAxis90 = Pose(floatArrayOf(0f, 0f, 0f),
@@ -93,9 +90,9 @@ class Dartboard() {
         val discriminant = b * b - 4 * a * c
 
         return when {
-            discriminant < 0 -> -1.0f
+            discriminant < 0.0f -> -1.0f
             discriminant == 0.0f -> (-b + sqrt(discriminant)) / (2 * a)
-            discriminant > 0 -> {
+            discriminant > 0.0f -> {
                 val sqrtD = sqrt(discriminant)
                 val t1 = (-b + sqrtD) / (2 * a)
                 val t2 = (-b - sqrtD) / (2 * a)
@@ -114,12 +111,7 @@ class Dartboard() {
     /**
      * Dart you add will be draw at the pose you given (world coordinate)
      */
-    fun addDart(pose: Pose) = renderer.dartsOnBoardRenderer.addDart(pose)
-
-    val normalVector: FloatArray
-        get() = pose.zAxis
-    val positionInWorldSpace: FloatArray
-        get() = pose.translation
+    fun addDart(pose: DartOnDartBoard) = renderer.dartsOnBoardRenderer.addDart(pose)
 
     private fun updateModelMatrix(modelMatrix: FloatArray) = renderer.updateModelMatrix(modelMatrix)
     fun createOnGlThread(context: Context) {
@@ -131,7 +123,10 @@ class Dartboard() {
             projectionMatrix: FloatArray,
             colorCorrectionRgba: FloatArray
     ) {
-        renderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
+        renderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, pose)
     }
 
 }
+
+data class DartOnDartBoard(val poseInDartboard: Pose,
+                           val cleanTime: Long)

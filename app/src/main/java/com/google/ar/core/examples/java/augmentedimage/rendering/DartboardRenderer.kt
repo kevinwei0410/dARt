@@ -2,11 +2,10 @@ package com.google.ar.core.examples.java.augmentedimage.rendering
 
 import android.content.Context
 import android.opengl.GLES30
+import android.util.Log
 import com.google.ar.core.Pose
-import java.lang.Exception
+import game.DartOnDartBoard
 import java.util.*
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.schedule
 
 class DartboardRenderer(private val modelScaleRate: Float) {
     companion object {
@@ -29,63 +28,51 @@ class DartboardRenderer(private val modelScaleRate: Float) {
     fun draw(
             viewMatrix: FloatArray,
             projectionMatrix: FloatArray,
-            colorCorrectionRgba: FloatArray
+            colorCorrectionRgba: FloatArray,
+            dartboardPose: Pose
     ) {
         GLES30.glEnable(GLES30.GL_DEPTH_TEST)
         dartboardRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
-        dartsOnBoardRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
+        dartsOnBoardRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, dartboardPose)
     }
 }
 
 class DartsOnBoardRenderer() {
-    private val poseListLock = ReentrantLock()
-    private val poseOfDartsOnBoard = LinkedList<Pose>()
+    companion object {
+        private val TAG = DartsOnBoardRenderer::class::simpleName.get()
+    }
+
+    private val dartsOnDartboard = LinkedList<DartOnDartBoard>()
 
     private val dartRenderer = DartRenderer()
     private val modelMatrix = FloatArray(16)
-
-    private val autoCleanDartTimer = Timer().apply {
-        schedule(1000, 3000) {
-            popDart()
-        }
-    }
 
     internal fun createOnGlThread(context: Context) {
         dartRenderer.createOnGlThread(context)
     }
 
-    fun addDart(pose: Pose) {
-        poseListLock.lock()
-        try {
-            poseOfDartsOnBoard.add(pose)
-        } catch (e: Exception) {
-            poseListLock.unlock()
-        }
+    fun addDart(pose: DartOnDartBoard) {
+        Log.i(TAG, "New darts hits board")
+        dartsOnDartboard.add(pose)
     }
 
-    private fun popDart() {
-        poseListLock.lock()
-        try {
-            poseOfDartsOnBoard.pop()
-        } catch (e: Exception) {
-            poseListLock.unlock()
-        }
-    }
 
     fun draw(
             viewMatrix: FloatArray,
             projectionMatrix: FloatArray,
-            colorCorrectionRgba: FloatArray
+            colorCorrectionRgba: FloatArray,
+            dartboardPose: Pose
     ) {
-        poseListLock.lock()
-        try {
-            for (pose in poseOfDartsOnBoard) {
-                pose.toMatrix(modelMatrix, 0)
-                dartRenderer.updateModelMatrix(modelMatrix)
-                dartRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
+        val iterator = dartsOnDartboard.iterator()
+        while (iterator.hasNext()) {
+            val dartOnDartBoard = iterator.next()
+            if (System.currentTimeMillis() > dartOnDartBoard.cleanTime) {
+                iterator.remove()
+                continue
             }
-        } catch (e: Exception) {
-            poseListLock.unlock()
+            (dartboardPose.compose(dartOnDartBoard.poseInDartboard)).toMatrix(modelMatrix, 0)
+            dartRenderer.updateModelMatrix(modelMatrix)
+            dartRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
         }
     }
 }
