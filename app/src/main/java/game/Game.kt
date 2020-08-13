@@ -66,7 +66,7 @@ class Game {
 class FlyingDart(private val dartboard: Dartboard) {
     companion object {
         val TAG = FlyingDart::class.simpleName
-        private const val CLEAN_TIME_MILLIS = 3000
+        private const val CLEAN_TIME_MILLIS = 8000
     }
 
     data class DartInitialState(val t0InMillis: Long,

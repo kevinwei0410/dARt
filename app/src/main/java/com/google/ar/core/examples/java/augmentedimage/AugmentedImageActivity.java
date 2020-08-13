@@ -19,7 +19,9 @@ package com.google.ar.core.examples.java.augmentedimage;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.opengl.GLES10;
 import android.opengl.GLES20;
+import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -56,6 +58,8 @@ import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationExceptio
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -63,6 +67,7 @@ import java.util.Map;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import connection.SocketConnection;
 import game.Game;
 
 /**
@@ -82,7 +87,6 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private GLSurfaceView surfaceView;
     private ImageView fitToScanView;
     private RequestManager glideRequestManager;
-
     private boolean installRequested;
 
     private Session session;
@@ -94,11 +98,13 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private final AugmentedImageRenderer augmentedImageRenderer = new AugmentedImageRenderer();
 
     private final Game game = new Game();
-    private Button shootBtn;
-
+    private SocketConnection conn = new SocketConnection(game);
     private boolean canDrawDart = false;
 
     private boolean shouldConfigureSession = false;
+
+
+    // Get Image view by id
 
     // Augmented image configuration and rendering.
     // Load a single image (true) or a pre-generated image database (false).
@@ -131,16 +137,14 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
         installRequested = false;
 
-        shootBtn = findViewById(R.id.shootBtn);
-        shootBtn.setOnClickListener(v -> {
-            game.shootDart(2.3f);
-        });
+        conn.receiveThread = new Thread(conn.new ReceiveThread(), "ReceiveThread");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
+        conn.startBackgroundThread();
+        conn.receiveThread.start();
         if (session == null) {
             Exception exception = null;
             String message = null;
@@ -207,6 +211,8 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     @Override
     public void onPause() {
         super.onPause();
+        conn.stopBackgroundThread();
+        //receiveThread.interrupt();
         if (session != null) {
             // Note that the order matters - GLSurfaceView is paused first so that it does not try
             // to query the session. If Session is paused before GLSurfaceView, GLSurfaceView may
@@ -284,6 +290,22 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
             // If frame is ready, render camera preview image to the GL surface.
             backgroundRenderer.draw(frame);
+            // Create buffer: allocate memory( 1 pixel = 4 bytes(R, G, B, A))
+            ByteBuffer bf = ByteBuffer.allocateDirect(surfaceView.getWidth() * surfaceView.getHeight() * 4);
+            // Using nativeOrder to store in buffer (other option: Big Endian / Little Endian)
+            bf.order(ByteOrder.nativeOrder());
+
+            // Camera view to buffer
+            GLES10.glReadPixels(0, 0, surfaceView.getWidth(), surfaceView.getHeight(),
+                    GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, bf);
+            // Create bitmap
+            Bitmap bmp = Bitmap.createBitmap(surfaceView.getWidth(), surfaceView.getHeight(), Bitmap.Config.ARGB_8888);
+            bf.rewind();
+            // Copy buffer data to bitmap
+            bmp.copyPixelsFromBuffer(bf);
+
+            conn.mBackgroundHandler.post(conn.new SendImageData(bmp));
+
 
             float[] projmtx = new float[16];
             camera.getProjectionMatrix(projmtx, 0, 0.01f, 15.0f);
@@ -433,4 +455,3 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
         return null;
     }
 }
-
