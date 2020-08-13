@@ -544,11 +544,10 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 // Receive data
                 try {
                     socket.receive(revPacket);
-                    String msg = new String(revPacket.getData(), 0, revPacket.getLength());
-                    Log.i("Server Message", msg);
-                    if (msg.equals("shoot")){
-                        game.shootDart(cameraPose, 2.3f);
-                    }
+                    float velocity = ByteBuffer.wrap(revPacket.getData()).order(ByteOrder.BIG_ENDIAN).getFloat();
+                    Log.i("Server Message", String.valueOf(velocity));
+                    game.shootDart(cameraPose, (5*velocity)+10);
+
 
                 } catch (Exception e) {
                     Log.i("Receive Error", e.toString());
