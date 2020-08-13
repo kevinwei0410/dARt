@@ -87,7 +87,6 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private GLSurfaceView surfaceView;
     private ImageView fitToScanView;
     private RequestManager glideRequestManager;
-    private static Integer count = 0;
     private boolean installRequested;
 
     private Session session;
