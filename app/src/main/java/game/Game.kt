@@ -20,12 +20,13 @@ class Game {
         val TAG = Game::class.simpleName
     }
 
+    lateinit var cameraPose: Pose
     val dart = Dart()
     val dartboard = Dartboard()
     private val flyingDart = FlyingDart(dartboard)
 
 
-    fun shootDart(cameraPose: Pose, speed: Float = 2.3f) {
+    fun shootDart(speed: Float = 2.3f) {
         val dartPoseInWorld = cameraPose.compose(dart.standbyPose)
 
         val p0 = dartPoseInWorld.translation
@@ -65,7 +66,7 @@ class Game {
 class FlyingDart(private val dartboard: Dartboard) {
     companion object {
         val TAG = FlyingDart::class.simpleName
-        private const val CLEAN_TIME_MILLIS = 3000
+        private const val CLEAN_TIME_MILLIS = 8000
     }
 
     data class DartInitialState(val t0InMillis: Long,

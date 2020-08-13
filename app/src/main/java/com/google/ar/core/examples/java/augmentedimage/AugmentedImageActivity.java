@@ -24,8 +24,6 @@ import android.opengl.GLES20;
 import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Pair;
@@ -58,13 +56,8 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
@@ -74,6 +67,7 @@ import java.util.Map;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import connection.SocketConnection;
 import game.Game;
 
 /**
@@ -105,18 +99,13 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private final AugmentedImageRenderer augmentedImageRenderer = new AugmentedImageRenderer();
 
     private final Game game = new Game();
-    private Pose cameraPose;
+    private SocketConnection conn = new SocketConnection(game);
     private Button shootBtn;
-
     private boolean canDrawDart = false;
 
     private boolean shouldConfigureSession = false;
 
-    private HandlerThread mBackgroundThread;
-    private Handler mBackgroundHandler;
-    private Thread receiveThread;
-    public DatagramSocket socket = null;
-    private InetAddress serverAddr;
+
     // Get Image view by id
 
     // Augmented image configuration and rendering.
@@ -151,17 +140,18 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
         installRequested = false;
         shootBtn = findViewById(R.id.shootBtn);
         shootBtn.setOnClickListener(v -> {
-            game.shootDart(cameraPose, 10f);
+            game.shootDart(10f);
+            game.shootDart(10f);
         });
 
-        receiveThread =  new Thread(new ReceiveThread(),"ReceiveThread");
+        conn.receiveThread = new Thread(conn.new ReceiveThread(), "ReceiveThread");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        startBackgroundThread();
-        receiveThread.start();
+        conn.startBackgroundThread();
+        conn.receiveThread.start();
         if (session == null) {
             Exception exception = null;
             String message = null;
@@ -228,7 +218,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     @Override
     public void onPause() {
         super.onPause();
-        stopBackgroundThread();
+        conn.stopBackgroundThread();
         //receiveThread.interrupt();
         if (session != null) {
             // Note that the order matters - GLSurfaceView is paused first so that it does not try
@@ -321,7 +311,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             // Copy buffer data to bitmap
             bmp.copyPixelsFromBuffer(bf);
 
-            mBackgroundHandler.post(new SendImageData(bmp));
+            conn.mBackgroundHandler.post(conn.new SendImageData(bmp));
 
 
             float[] projmtx = new float[16];
@@ -340,7 +330,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
             if (canDrawDart) {
                 float[] modelViewMatrix = new float[16];
-                cameraPose = camera.getDisplayOrientedPose();
+                game.cameraPose = camera.getDisplayOrientedPose();
 
 
 //                float[] translation = ((SeekBarsTranslation) findViewById(R.id.sbTranslation)).getTranslation();
@@ -351,7 +341,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 //                game.getDart().setStandbyPose(dartPose);
 //                Pose dartPoseInCamera = cameraPose.compose(dartPose);
 
-                Pose dartPoseInWorld = cameraPose.compose(game.getDart().getStandbyPose());
+                Pose dartPoseInWorld = game.cameraPose.compose(game.getDart().getStandbyPose());
 
                 dartPoseInWorld.toMatrix(modelViewMatrix, 0);
                 game.getDart().updateModelMatrix(modelViewMatrix);
@@ -470,89 +460,5 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             Log.e(TAG, "IO exception loading augmented image bitmap.", e);
         }
         return null;
-    }
-
-    private void startBackgroundThread(){
-        mBackgroundThread = new HandlerThread("CameraBackground");
-        mBackgroundThread.start();
-        mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
-    }
-
-    private void stopBackgroundThread() {
-        mBackgroundThread.quitSafely();
-        try {
-            mBackgroundThread.join();
-            mBackgroundThread = null;
-            mBackgroundHandler = null;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-    private class SendImageData implements Runnable {
-        private Bitmap mBitMap;
-        private Bitmap resizeBitMap;
-        private byte[] data = null;
-
-        public SendImageData(Bitmap bmp) {
-            mBitMap = bmp;
-            resizeBitMap = Bitmap.createScaledBitmap(mBitMap, mBitMap.getWidth()/10, mBitMap.getHeight()/10, true);
-        }
-
-        @Override
-        public void run() {
-            try {
-                if(serverAddr == null) {
-                    serverAddr = InetAddress.getByName("140.121.196.201");
-                }
-                if(socket == null) {
-                    socket = new DatagramSocket();
-                }
-
-                ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-                resizeBitMap.compress(Bitmap.CompressFormat.JPEG, 80, byteStream);
-                data = byteStream.toByteArray();
-                try {
-                    DatagramPacket packet = new DatagramPacket(data, data.length, serverAddr,5000);
-                    Log.i("data length", String.valueOf(data.length));
-                    socket.send(packet);
-                } catch (Exception e) {
-                    System.out.println("Error 1:" + e.toString());
-                }
-            } catch (Exception e) {
-                System.out.println("Error 2:"+ e.toString());
-                socket.close();
-            }
-            mBitMap.recycle();
-        }
-    }
-
-    private class ReceiveThread implements Runnable {
-        private byte[] revData = new byte[2048];
-        private DatagramPacket revPacket = new DatagramPacket(revData, revData.length);
-
-        @Override
-        public void run() {
-            if(socket == null) {
-                try {
-                    socket = new DatagramSocket();
-                } catch (SocketException e) {
-                    e.printStackTrace();
-                }
-            }
-            while(true)
-            {
-                // Receive data
-                try {
-                    socket.receive(revPacket);
-                    float velocity = ByteBuffer.wrap(revPacket.getData()).order(ByteOrder.BIG_ENDIAN).getFloat();
-                    Log.i("Server Message", String.valueOf(velocity));
-                    game.shootDart(cameraPose, (5*velocity)+10);
-
-
-                } catch (Exception e) {
-                    Log.i("Receive Error", e.toString());
-                }
-            }
-        }
     }
 }
