@@ -26,7 +26,12 @@ class Game {
     private val flyingDart = FlyingDart(dartboard)
 
 
-    fun shootDart(speed: Float = 2.3f) {
+    /**
+     * Return dart pose in dartboard coordinate and ETA in second
+     *
+     * ETA will be negative if this dart won't hit the dartboard
+     */
+    fun shootDart(speed: Float = 2.3f): Pair<Pose?, Float> {
         val dartPoseInWorld = cameraPose.compose(dart.standbyPose)
 
         val p0 = dartPoseInWorld.translation
@@ -35,11 +40,14 @@ class Game {
         // ETA to dartboard *plane*, not dartboard per se
         val ETA = dartboard.calculateHitTime(p0, v0)
         val animate = Animate(speed, cameraPose.compose(dart.standbyPose))
-
+        var dartPoseInDartboard : Pose? = null
         Log.i(TAG, "dart shot, ETA: $ETA seconds")
 
-        if (ETA > 0.0f)
+        if (ETA > 0.0f){
             flyingDart.addDart(System.currentTimeMillis(), animate, ETA)
+            dartPoseInDartboard = dartboard.pose.inverse().compose(dartPoseInWorld)
+        }
+        return (dartPoseInDartboard to ETA)
     }
 
     fun updateDartboardPose(pose: Pose) {
@@ -63,6 +71,11 @@ class Game {
     }
 }
 
+
+/**
+ *   Responsible for drawing flying dart, if the dart hit the dartboard
+ * it will stick on dartboard for $CLEAN_TIME_MILLIS$ milliseconds
+ */
 class FlyingDart(private val dartboard: Dartboard) {
     companion object {
         val TAG = FlyingDart::class.simpleName
