@@ -19,15 +19,17 @@ package com.google.ar.core.examples.java.augmentedimage;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.opengl.GLES10;
 import android.opengl.GLES20;
+import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
@@ -42,7 +44,6 @@ import com.google.ar.core.Frame;
 import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.examples.java.augmentedimage.rendering.AugmentedImageRenderer;
-import com.google.ar.core.examples.java.augmentedimage.rendering.DartRenderer;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
 import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
@@ -57,6 +58,8 @@ import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationExceptio
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,8 +67,8 @@ import java.util.Map;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import dartcontroller.SeekBarsRotation;
-import dartcontroller.SeekBarsTranslation;
+import connection.SocketConnection;
+import game.Game;
 
 /**
  * This app extends the HelloAR Java app to include image tracking functionality.
@@ -84,7 +87,6 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private GLSurfaceView surfaceView;
     private ImageView fitToScanView;
     private RequestManager glideRequestManager;
-
     private boolean installRequested;
 
     private Session session;
@@ -95,10 +97,14 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     private final BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
     private final AugmentedImageRenderer augmentedImageRenderer = new AugmentedImageRenderer();
 
-    private final DartRenderer dartRenderer = new DartRenderer();
+    private final Game game = new Game();
+    private SocketConnection conn = new SocketConnection(game);
     private boolean canDrawDart = false;
 
     private boolean shouldConfigureSession = false;
+
+
+    // Get Image view by id
 
     // Augmented image configuration and rendering.
     // Load a single image (true) or a pre-generated image database (false).
@@ -130,12 +136,15 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 .into(fitToScanView);
 
         installRequested = false;
+
+        conn.receiveThread = new Thread(conn.new ReceiveThread(), "ReceiveThread");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
+        conn.startBackgroundThread();
+        conn.receiveThread.start();
         if (session == null) {
             Exception exception = null;
             String message = null;
@@ -202,6 +211,8 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     @Override
     public void onPause() {
         super.onPause();
+        conn.stopBackgroundThread();
+        //receiveThread.interrupt();
         if (session != null) {
             // Note that the order matters - GLSurfaceView is paused first so that it does not try
             // to query the session. If Session is paused before GLSurfaceView, GLSurfaceView may
@@ -241,7 +252,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             // Create the texture and pass it to ARCore session to be filled during update().
             backgroundRenderer.createOnGlThread(/*context=*/ this);
             augmentedImageRenderer.createOnGlThread(/*context=*/ this);
-            dartRenderer.createOnGlThread(this);
+            game.createOnGlThread(this);
         } catch (IOException e) {
             Log.e(TAG, "Failed to read an asset file", e);
         }
@@ -279,6 +290,22 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
             // If frame is ready, render camera preview image to the GL surface.
             backgroundRenderer.draw(frame);
+            // Create buffer: allocate memory( 1 pixel = 4 bytes(R, G, B, A))
+            ByteBuffer bf = ByteBuffer.allocateDirect(surfaceView.getWidth() * surfaceView.getHeight() * 4);
+            // Using nativeOrder to store in buffer (other option: Big Endian / Little Endian)
+            bf.order(ByteOrder.nativeOrder());
+
+            // Camera view to buffer
+            GLES10.glReadPixels(0, 0, surfaceView.getWidth(), surfaceView.getHeight(),
+                    GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, bf);
+            // Create bitmap
+            Bitmap bmp = Bitmap.createBitmap(surfaceView.getWidth(), surfaceView.getHeight(), Bitmap.Config.ARGB_8888);
+            bf.rewind();
+            // Copy buffer data to bitmap
+            bmp.copyPixelsFromBuffer(bf);
+
+            conn.mBackgroundHandler.post(conn.new SendImageData(bmp));
+
 
             float[] projmtx = new float[16];
             camera.getProjectionMatrix(projmtx, 0, 0.01f, 15.0f);
@@ -296,22 +323,22 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
             if (canDrawDart) {
                 float[] modelViewMatrix = new float[16];
-                Pose cameraPose = camera.getDisplayOrientedPose();
+                game.cameraPose = camera.getDisplayOrientedPose();
 
-                float[] translation = ((SeekBarsTranslation) findViewById(R.id.sbTranslation)).getTranslation();
-                float[] rotation = ((SeekBarsRotation) findViewById(R.id.sbRotation)).getQuaternion();
 
-                Pose dartPose = new Pose(translation, rotation);
-                Log.d("Dart", dartPose.toString());
+//                float[] translation = ((SeekBarsTranslation) findViewById(R.id.sbTranslation)).getTranslation();
+//                float[] rotation = ((SeekBarsRotation) findViewById(R.id.sbRotation)).getQuaternion();
 
-                float[] zAxis = dartPose.getZAxis();
-                ((TextView) findViewById(R.id.textViewZAxis))
-                        .setText(getString(R.string.vec3, -zAxis[0], -zAxis[1], -zAxis[2]));
 
-                cameraPose.compose(dartPose)
-                        .toMatrix(modelViewMatrix, 0);
-                dartRenderer.updateModelMatrix(modelViewMatrix);
-                dartRenderer.draw(viewmtx, projmtx, colorCorrectionRgba);
+//                Pose dartPose = new Pose(translation, rotation);
+//                game.getDart().setStandbyPose(dartPose);
+//                Pose dartPoseInCamera = cameraPose.compose(dartPose);
+
+                Pose dartPoseInWorld = game.cameraPose.compose(game.getDart().getStandbyPose());
+
+                dartPoseInWorld.toMatrix(modelViewMatrix, 0);
+                game.getDart().updateModelMatrix(modelViewMatrix);
+                game.draw(viewmtx, projmtx, colorCorrectionRgba);
             }
 
         } catch (Throwable t) {
@@ -340,15 +367,14 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 case PAUSED:
                     // When an image is in PAUSED state, but the camera is not PAUSED, it has been detected,
                     // but not yet tracked.
-                    String text = String.format("Detected Image %d", augmentedImage.getIndex());
                     //messageSnackbarHelper.showMessage(this, text);
                     break;
 
                 case TRACKING:
                     // Have to switch to UI Thread to update View.
                     canDrawDart = true;
+                    game.updateDartboardPose(augmentedImage.getCenterPose());
                     this.runOnUiThread(() -> fitToScanView.setVisibility(View.GONE));
-
                     // Create a new anchor for newly found images.
                     if (!augmentedImageMap.containsKey(augmentedImage.getIndex())) {
                         Anchor centerPoseAnchor = augmentedImage.createAnchor(augmentedImage.getCenterPose());
@@ -367,7 +393,8 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             }
         }
 
-        // Draw all images in augmentedImageMap
+        // Draw all images in
+        /*
         for (Pair<AugmentedImage, Anchor> pair : augmentedImageMap.values()) {
             AugmentedImage augmentedImage = pair.first;
             Anchor centerAnchor = augmentedImageMap.get(augmentedImage.getIndex()).second;
@@ -380,6 +407,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                     break;
             }
         }
+         */
     }
 
     private boolean setupAugmentedImageDatabase(Config config) {
@@ -427,4 +455,3 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
         return null;
     }
 }
-
