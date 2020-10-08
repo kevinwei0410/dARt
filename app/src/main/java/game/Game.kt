@@ -50,6 +50,10 @@ class Game {
         return (dartPoseInDartboard to ETA)
     }
 
+    fun onOtherPlayersDartHitsDartboard(translation: FloatArray, rotation: FloatArray) {
+        TODO("Whatever");
+    }
+
     fun updateDartboardPose(pose: Pose) {
         dartboard.pose = pose
     }
