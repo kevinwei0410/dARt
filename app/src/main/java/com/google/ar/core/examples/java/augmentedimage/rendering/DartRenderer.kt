@@ -2,18 +2,18 @@ package com.google.ar.core.examples.java.augmentedimage.rendering
 
 import android.content.Context
 
-class DartRenderer {
+open class DartRenderer {
     companion object {
         internal val TAG = DartRenderer::class.simpleName!!
     }
 
-    private val dartRenderer = ObjectRenderer()
+    protected val dartRenderer = ObjectRenderer()
 
     fun updateModelMatrix(modelMatrix: FloatArray) {
         dartRenderer.updateModelMatrix(modelMatrix, 0.01f)
     }
 
-    fun createOnGlThread(context: Context) {
+    open fun createOnGlThread(context: Context) {
         dartRenderer.createOnGlThread(context, "models/11750_throwing_dart_v1_L3.obj", "models/throwing_dart_diffuse.jpg")
         dartRenderer.setBlendMode(ObjectRenderer.BlendMode.SourceAlpha)
     }
@@ -24,5 +24,12 @@ class DartRenderer {
             colorCorrectionRgba: FloatArray
     ) {
         dartRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
+    }
+}
+
+class EnemyDartRenderer: DartRenderer() {
+    override fun createOnGlThread(context: Context) {
+        dartRenderer.createOnGlThread(context, "models/11750_throwing_dart_v1_L3.obj", "models/throwing_dart_diffuse_enemy.jpg.jpg")
+        dartRenderer.setBlendMode(ObjectRenderer.BlendMode.SourceAlpha)
     }
 }

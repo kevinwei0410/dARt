@@ -109,7 +109,7 @@ class Dartboard {
     }
 
     /**
-     * Dart you add will be draw at the pose you given (world coordinate)
+     * Dart you add will be draw at the pose you given (relative to dartboard)
      */
     fun addDart(pose: DartOnDartBoard) = renderer.dartsOnBoardRenderer.addDart(pose)
 
@@ -129,4 +129,5 @@ class Dartboard {
 }
 
 data class DartOnDartBoard(val poseInDartboard: Pose,
-                           val cleanTime: Long)
+                           val cleanTime: Long,
+                           val isEnemyDart: Boolean = false)
