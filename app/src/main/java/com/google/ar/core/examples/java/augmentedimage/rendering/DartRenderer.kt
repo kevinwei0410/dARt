@@ -29,7 +29,7 @@ open class DartRenderer {
 
 class EnemyDartRenderer: DartRenderer() {
     override fun createOnGlThread(context: Context) {
-        dartRenderer.createOnGlThread(context, "models/11750_throwing_dart_v1_L3.obj", "models/throwing_dart_diffuse_enemy.jpg.jpg")
+        dartRenderer.createOnGlThread(context, "models/11750_throwing_dart_v1_L3.obj", "models/throwing_dart_diffuse_enemy.jpg")
         dartRenderer.setBlendMode(ObjectRenderer.BlendMode.SourceAlpha)
     }
 }
