@@ -50,6 +50,7 @@ class DartsOnBoardRenderer() {
 
     internal fun createOnGlThread(context: Context) {
         dartRenderer.createOnGlThread(context)
+        enemyDartRenderer.createOnGlThread(context)
     }
 
     fun addDart(pose: DartOnDartBoard) {
