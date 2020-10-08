@@ -198,7 +198,7 @@ public class Animate {
         this.speed = v;
         setDirection(new float[]{0, 0, -1f * speed * 0.01f});
     }
-    
+
 
     private void setDirection(float[] direction) {
         this.direction = direction;
@@ -218,7 +218,7 @@ public class Animate {
     };
 
     //r1 bull  r2~r3 trible r4~r5 double
-    private float[] Raid = {44.5f, 151.5f, 159.5f, 206.5f, 214.5f};
+    private float[] Raid = {0.0445f, 0.1515f, 0.1595f, 0.2065f, 0.2145f};
 
     /**
     *   getScore
