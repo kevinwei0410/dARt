@@ -40,10 +40,10 @@ class Game {
         // ETA to dartboard *plane*, not dartboard per se
         val ETA = dartboard.calculateHitTime(p0, v0)
         val animate = Animate(speed, cameraPose.compose(dart.standbyPose))
-        var dartPoseInDartboard : Pose? = null
+        var dartPoseInDartboard: Pose? = null
         Log.i(TAG, "dart shot, ETA: $ETA seconds")
 
-        if (ETA > 0.0f){
+        if (ETA > 0.0f) {
             flyingDart.addDart(System.currentTimeMillis(), animate, ETA)
             dartPoseInDartboard = dartboard.pose.inverse().compose(dartPoseInWorld)
         }
@@ -51,7 +51,12 @@ class Game {
     }
 
     fun onOtherPlayersDartHitsDartboard(translation: FloatArray, rotation: FloatArray) {
-        TODO("Whatever");
+        if (translation.size != 3 || rotation.size != 4)
+            throw IllegalArgumentException("Not a valid Pose.")
+
+        val dartPoseInDartboard = Pose(translation, rotation)
+        val dartPoseOnDartBoard = DartOnDartBoard(dartPoseInDartboard, System.currentTimeMillis() + FlyingDart.CLEAN_TIME_MILLIS, true)
+        dartboard.addDart(dartPoseOnDartBoard)
     }
 
     fun updateDartboardPose(pose: Pose) {
@@ -83,7 +88,7 @@ class Game {
 class FlyingDart(private val dartboard: Dartboard) {
     companion object {
         val TAG = FlyingDart::class.simpleName
-        private const val CLEAN_TIME_MILLIS = 8000
+        const val CLEAN_TIME_MILLIS = 8000
     }
 
     data class DartInitialState(val t0InMillis: Long,
