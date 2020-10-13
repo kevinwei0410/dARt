@@ -3,7 +3,10 @@ package game
 import android.content.Context
 import com.google.ar.core.Pose
 import com.google.ar.core.examples.java.augmentedimage.rendering.DartboardRenderer
-import kotlin.math.*
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 val FloatArray.x
     get() = this[0]
@@ -126,7 +129,55 @@ class Dartboard {
         renderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, pose)
     }
 
+    fun calculateScore(X: Float, Y: Float) {
+        ScoreCalculator.getScore(X, Y)
+    }
+
 }
 
 data class DartOnDartBoard(val poseInDartboard: Pose,
                            val cleanTime: Long)
+
+private object ScoreCalculator {
+
+    private val point = arrayOf(
+            intArrayOf(6, 13, 13, 4, 4, 18, 18, 1, 1, 20),
+            intArrayOf(6, 10, 10, 15, 15, 2, 2, 17, 17, 3),
+            intArrayOf(11, 8, 8, 16, 16, 7, 7, 19, 19, 3),
+            intArrayOf(11, 14, 14, 9, 9, 12, 12, 5, 5, 20))
+
+    //r1 bull  r2~r3 trible r4~r5 double
+    private val Raid = floatArrayOf(0.0445f, 0.1515f, 0.1595f, 0.2065f, 0.2145f)
+
+    /**
+     * getScore
+     * a function to get the single dart score with position of the dart
+     * @param x the x value of dart position (meter)
+     * @param y the y value of dart postion (meter)
+     * @return int score of the dart
+     */
+    fun getScore(x: Float, y: Float): Int {
+        var times = 1
+        val r = Math.sqrt(x * x + y * y.toDouble()).toFloat()
+        if (r > Raid[4]) {
+            times = 0
+        } else if (r > Raid[3] && r <= Raid[4]) {
+            times = 2
+        } else if (r > Raid[1] && r <= Raid[2]) {
+            times = 3
+        } else if (r <= Raid[0]) {
+            return 50
+        }
+        val theta = Math.toDegrees(Math.atan(x / y.toDouble())).toInt()
+        if (x > 0 && y > 0) {
+            return point[0][theta / 9] * times
+        } else if (x > 0 && y < 0) {
+            return point[1][theta / 9] * times
+        } else if (x < 0 && y < 0) {
+            return point[2][theta / 9] * times
+        } else if (x < 0 && y > 0) {
+            return point[3][theta / 9] * times
+        }
+        return -1
+    }
+}
