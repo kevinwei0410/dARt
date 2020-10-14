@@ -199,7 +199,6 @@ public class Animate {
         setDirection(new float[]{0, 0, -1f * speed * 0.01f});
     }
 
-    ;
 
     private void setDirection(float[] direction) {
         this.direction = direction;
