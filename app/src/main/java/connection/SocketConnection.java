@@ -207,8 +207,8 @@ public class SocketConnection {
                 try{
                     gameDataSocket.receive(revGamePacket);
                     ByteBuffer.wrap(revGamePacket.getData()).order(ByteOrder.BIG_ENDIAN).asFloatBuffer().get(callBackGameData);
-                    System.arraycopy(callBackGameData, 0, translationArray, 0, 3);
-                    System.arraycopy(callBackGameData, 3, roatationArray, 0, 4);
+                    System.arraycopy(callBackGameData, 0, roatationArray, 0, 4);
+                    System.arraycopy(callBackGameData, 4, translationArray, 0, 3);
                     Log.i("Receive_GameData", Arrays.toString(callBackGameData));
                     game.onOtherPlayersDartHitsDartboard(translationArray, roatationArray);
                 } catch(Exception e) {
