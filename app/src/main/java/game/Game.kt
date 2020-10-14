@@ -32,10 +32,10 @@ class Game {
      * ETA will be negative if this dart won't hit the dartboard
      */
     fun shootDart(speed: Float = 2.3f): Pair<Pose?, Float> {
-        val dartPoseInWorld = cameraPose.compose(dart.standbyPose)
+        val dartStandbyPoseInWorld = cameraPose.compose(dart.standbyPose)
 
-        val p0 = dartPoseInWorld.translation
-        val v0 = dartPoseInWorld.zAxis.map { -it * speed }.toFloatArray()
+        val p0 = dartStandbyPoseInWorld.translation
+        val v0 = dartStandbyPoseInWorld.zAxis.map { -it * speed }.toFloatArray()
 
         // ETA to dartboard *plane*, not dartboard per se
         val ETA = dartboard.calculateHitTime(p0, v0)
@@ -45,8 +45,9 @@ class Game {
 
         if (ETA > 0.0f) {
             flyingDart.addDart(System.currentTimeMillis(), animate, ETA)
-            dartPoseInDartboard = dartboard.pose.inverse().compose(dartPoseInWorld)
+            dartPoseInDartboard = dartboard.pose.inverse().compose(animate.calculatePose(ETA))
         }
+        Log.i(TAG, "My dart shoots, pose on dartboard $dartPoseInDartboard")
         return (dartPoseInDartboard to ETA)
     }
 
@@ -55,8 +56,9 @@ class Game {
             throw IllegalArgumentException("Not a valid Pose.")
 
         val dartPoseInDartboard = Pose(translation, rotation)
-        val dartPoseOnDartBoard = DartOnDartBoard(dartPoseInDartboard, System.currentTimeMillis() + FlyingDart.CLEAN_TIME_MILLIS, true)
-        dartboard.addDart(dartPoseOnDartBoard)
+        Log.i(TAG, "Enemy dart shoots, pose on dartboard $dartPoseInDartboard")
+        val dartOnDartBoard = DartOnDartBoard(dartPoseInDartboard, System.currentTimeMillis() + FlyingDart.CLEAN_TIME_MILLIS, true)
+        dartboard.addDart(dartOnDartBoard)
     }
 
     fun updateDartboardPose(pose: Pose) {
