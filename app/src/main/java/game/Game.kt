@@ -32,22 +32,33 @@ class Game {
      * ETA will be negative if this dart won't hit the dartboard
      */
     fun shootDart(speed: Float = 2.3f): Pair<Pose?, Float> {
-        val dartPoseInWorld = cameraPose.compose(dart.standbyPose)
+        val dartStandbyPoseInWorld = cameraPose.compose(dart.standbyPose)
 
-        val p0 = dartPoseInWorld.translation
-        val v0 = dartPoseInWorld.zAxis.map { -it * speed }.toFloatArray()
+        val p0 = dartStandbyPoseInWorld.translation
+        val v0 = dartStandbyPoseInWorld.zAxis.map { -it * speed }.toFloatArray()
 
         // ETA to dartboard *plane*, not dartboard per se
         val ETA = dartboard.calculateHitTime(p0, v0)
         val animate = Animate(speed, cameraPose.compose(dart.standbyPose))
-        var dartPoseInDartboard : Pose? = null
+        var dartPoseInDartboard: Pose? = null
         Log.i(TAG, "dart shot, ETA: $ETA seconds")
 
-        if (ETA > 0.0f){
+        if (ETA > 0.0f) {
             flyingDart.addDart(System.currentTimeMillis(), animate, ETA)
-            dartPoseInDartboard = dartboard.pose.inverse().compose(dartPoseInWorld)
+            dartPoseInDartboard = dartboard.pose.inverse().compose(animate.calculatePose(ETA))
         }
+        Log.i(TAG, "My dart shoots, pose on dartboard $dartPoseInDartboard")
         return (dartPoseInDartboard to ETA)
+    }
+
+    fun onOtherPlayersDartHitsDartboard(translation: FloatArray, rotation: FloatArray) {
+        if (translation.size != 3 || rotation.size != 4)
+            throw IllegalArgumentException("Not a valid Pose.")
+
+        val dartPoseInDartboard = Pose(translation, rotation)
+        Log.i(TAG, "Enemy dart shoots, pose on dartboard $dartPoseInDartboard")
+        val dartOnDartBoard = DartOnDartBoard(dartPoseInDartboard, System.currentTimeMillis() + FlyingDart.CLEAN_TIME_MILLIS, true)
+        dartboard.addDart(dartOnDartBoard)
     }
 
     fun updateDartboardPose(pose: Pose) {
@@ -79,7 +90,7 @@ class Game {
 class FlyingDart(private val dartboard: Dartboard) {
     companion object {
         val TAG = FlyingDart::class.simpleName
-        private const val CLEAN_TIME_MILLIS = 8000
+        const val CLEAN_TIME_MILLIS = 8000
     }
 
     data class DartInitialState(val t0InMillis: Long,

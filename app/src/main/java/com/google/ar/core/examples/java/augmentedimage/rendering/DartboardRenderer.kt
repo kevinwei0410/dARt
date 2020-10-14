@@ -45,10 +45,12 @@ class DartsOnBoardRenderer() {
     private val dartsOnDartboard = LinkedList<DartOnDartBoard>()
 
     private val dartRenderer = DartRenderer()
+    private val enemyDartRenderer = EnemyDartRenderer()
     private val modelMatrix = FloatArray(16)
 
     internal fun createOnGlThread(context: Context) {
         dartRenderer.createOnGlThread(context)
+        enemyDartRenderer.createOnGlThread(context)
     }
 
     fun addDart(pose: DartOnDartBoard) {
@@ -71,8 +73,14 @@ class DartsOnBoardRenderer() {
                 continue
             }
             (dartboardPose.compose(dartOnDartBoard.poseInDartboard)).toMatrix(modelMatrix, 0)
-            dartRenderer.updateModelMatrix(modelMatrix)
-            dartRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
+
+            if (dartOnDartBoard.isEnemyDart) {
+                enemyDartRenderer.updateModelMatrix(modelMatrix)
+                enemyDartRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
+            } else {
+                dartRenderer.updateModelMatrix(modelMatrix)
+                dartRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
+            }
         }
     }
 }
