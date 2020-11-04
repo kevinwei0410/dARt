@@ -28,7 +28,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -138,13 +137,17 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
         installRequested = false;
 
         conn.receiveThread = new Thread(conn.new ReceiveThread(), "ReceiveThread");
+        conn.receiveGameData = new Thread(conn.new ReceiveGameData(),"ReceiveGameData");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        conn.startBackgroundThread();
+        conn.startCameraThread();
+        conn.startGameDataThread();
         conn.receiveThread.start();
+        conn.receiveGameData.start();
+
         if (session == null) {
             Exception exception = null;
             String message = null;
@@ -211,7 +214,8 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     @Override
     public void onPause() {
         super.onPause();
-        conn.stopBackgroundThread();
+        conn.stopCameraThread();
+        conn.stopGameDataThread();
         //receiveThread.interrupt();
         if (session != null) {
             // Note that the order matters - GLSurfaceView is paused first so that it does not try
@@ -304,7 +308,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             // Copy buffer data to bitmap
             bmp.copyPixelsFromBuffer(bf);
 
-            conn.mBackgroundHandler.post(conn.new SendImageData(bmp));
+            conn.mCameraHandler.post(conn.new SendCameraImage(bmp));
 
 
             float[] projmtx = new float[16];
