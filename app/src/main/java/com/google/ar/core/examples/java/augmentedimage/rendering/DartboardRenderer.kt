@@ -5,6 +5,8 @@ import android.opengl.GLES30
 import android.util.Log
 import com.google.ar.core.Pose
 import game.DartOnDartBoard
+import game.Dartboard
+import game.distanceTo
 import java.util.*
 
 class DartboardRenderer(private val modelScaleRate: Float) {
@@ -72,9 +74,17 @@ class DartsOnBoardRenderer() {
                 iterator.remove()
                 continue
             }
-            (dartboardPose.compose(dartOnDartBoard.poseInDartboard)).toMatrix(modelMatrix, 0)
+
+            val dartPoseInWorld = dartboardPose.compose(dartOnDartBoard.poseInDartboard)
+            dartPoseInWorld.toMatrix(modelMatrix, 0)
 
             if (dartOnDartBoard.isEnemyDart) {
+                val distanceToDartboardCenter = dartPoseInWorld.translation.distanceTo(dartboardPose.translation)
+                val isHit = distanceToDartboardCenter < Dartboard.STANDARD_RADIUS
+                if (!isHit) {
+                    iterator.remove()
+                    break
+                }
                 enemyDartRenderer.updateModelMatrix(modelMatrix)
                 enemyDartRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
             } else {
