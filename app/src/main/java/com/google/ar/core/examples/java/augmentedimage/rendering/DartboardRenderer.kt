@@ -5,6 +5,7 @@ import android.opengl.GLES30
 import android.util.Log
 import com.google.ar.core.Pose
 import game.DartOnDartBoard
+import game.Dartboard
 import java.util.*
 
 class DartboardRenderer(private val modelScaleRate: Float) {
@@ -40,6 +41,12 @@ class DartboardRenderer(private val modelScaleRate: Float) {
 class DartsOnBoardRenderer() {
     companion object {
         private val TAG = DartsOnBoardRenderer::class::simpleName.get()
+        fun addDart(dartsOnBoardRenderer: DartsOnBoardRenderer, pose: DartOnDartBoard) {
+            Log.i(TAG, "New darts hits board")
+            dartsOnBoardRenderer.dartsOnDartboard.add(pose)
+            val score  = Dartboard.calculateScore(pose.poseInDartboard.tx(), pose.poseInDartboard.ty())
+            Log.d("score", "the score is $score")
+        }
     }
 
     private val dartsOnDartboard = LinkedList<DartOnDartBoard>()
@@ -51,11 +58,6 @@ class DartsOnBoardRenderer() {
     internal fun createOnGlThread(context: Context) {
         dartRenderer.createOnGlThread(context)
         enemyDartRenderer.createOnGlThread(context)
-    }
-
-    fun addDart(pose: DartOnDartBoard) {
-        Log.i(TAG, "New darts hits board")
-        dartsOnDartboard.add(pose)
     }
 
 
@@ -73,7 +75,7 @@ class DartsOnBoardRenderer() {
                 continue
             }
             (dartboardPose.compose(dartOnDartBoard.poseInDartboard)).toMatrix(modelMatrix, 0)
-
+            
             if (dartOnDartBoard.isEnemyDart) {
                 enemyDartRenderer.updateModelMatrix(modelMatrix)
                 enemyDartRenderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba)
