@@ -1,11 +1,12 @@
 package game
 
 import android.content.Context
-import android.util.Log
 import com.google.ar.core.Pose
 import com.google.ar.core.examples.java.augmentedimage.rendering.DartboardRenderer
-import com.google.ar.core.examples.java.augmentedimage.rendering.DartsOnBoardRenderer
-import kotlin.math.*
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 val FloatArray.x
     get() = this[0]
@@ -45,10 +46,6 @@ class Dartboard {
         private const val modelRadius = 26.7f // model unit
         const val STANDARD_RADIUS = 0.2265f // meter
         const val scaleRate = STANDARD_RADIUS / modelRadius
-
-        fun calculateScore(X: Float, Y: Float):Int {
-            return ScoreCalculator.getScore(X, Y)
-        }
     }
 
     // Pose of augmented image is z pointed down, x pointed right
@@ -117,7 +114,7 @@ class Dartboard {
     /**
      * Dart you add will be draw at the pose you given (relative to dartboard)
      */
-    fun addDart(pose: DartOnDartBoard) = DartsOnBoardRenderer.addDart(renderer.dartsOnBoardRenderer, pose)
+    fun addDart(pose: DartOnDartBoard) = renderer.dartsOnBoardRenderer.addDart(pose)
 
     private fun updateModelMatrix(modelMatrix: FloatArray) = renderer.updateModelMatrix(modelMatrix)
     fun createOnGlThread(context: Context) {
@@ -132,7 +129,9 @@ class Dartboard {
         renderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, pose)
     }
 
-
+    fun calculateScore(X: Float, Y: Float) {
+        ScoreCalculator.getScore(X, Y)
+    }
 
 }
 
@@ -143,15 +142,13 @@ data class DartOnDartBoard(val poseInDartboard: Pose,
 private object ScoreCalculator {
 
     private val point = arrayOf(
-            intArrayOf(6, 13, 13, 4, 4, 18, 18, 1, 1, 20, 20),
-            intArrayOf(6, 10, 10, 15, 15, 2, 2, 17, 17, 3, 3),
-            intArrayOf(11, 8, 8, 16, 16, 7, 7, 19, 19, 3, 3),
-            intArrayOf(11, 14, 14, 9, 9, 12, 12, 5, 5, 20, 20))
+            intArrayOf(6, 13, 13, 4, 4, 18, 18, 1, 1, 20),
+            intArrayOf(6, 10, 10, 15, 15, 2, 2, 17, 17, 3),
+            intArrayOf(11, 8, 8, 16, 16, 7, 7, 19, 19, 3),
+            intArrayOf(11, 14, 14, 9, 9, 12, 12, 5, 5, 20))
 
     //r1 bull  r2~r3 trible r4~r5 double
-    // original size  0.1070f, 0.1150f, 0.1620f, 0.1700f
-    // bigger for easy shoots 0.1050f, 0.1150f, 0.1610f, 0.1710f
-    private val Raid = floatArrayOf(0.0445f, 0.1040f, 0.1150f, 0.1610f, 0.1710f)
+    private val Raid = floatArrayOf(0.0445f, 0.1515f, 0.1595f, 0.2065f, 0.2145f)
 
     /**
      * getScore
@@ -162,26 +159,24 @@ private object ScoreCalculator {
      */
     fun getScore(x: Float, y: Float): Int {
         var times = 1
-        val r = sqrt(x * x + y * y)
+        val r = Math.sqrt(x * x + y * y.toDouble()).toFloat()
         if (r > Raid[4]) {
-            return 0
+            times = 0
         } else if (r > Raid[3] && r <= Raid[4]) {
-            Log.d("score", "double score")
             times = 2
         } else if (r > Raid[1] && r <= Raid[2]) {
-            Log.d("score", "triple score")
             times = 3
         } else if (r <= Raid[0]) {
             return 50
         }
-        val theta = abs(Math.toDegrees(atan(y / x.toDouble())).toInt())
-        if (x >= 0 && y >= 0) {
+        val theta = Math.toDegrees(Math.atan(x / y.toDouble())).toInt()
+        if (x > 0 && y > 0) {
             return point[0][theta / 9] * times
-        } else if (x >= 0 && y < 0) {
+        } else if (x > 0 && y < 0) {
             return point[1][theta / 9] * times
         } else if (x < 0 && y < 0) {
             return point[2][theta / 9] * times
-        } else if (x < 0 && y >= 0) {
+        } else if (x < 0 && y > 0) {
             return point[3][theta / 9] * times
         }
         return -1
