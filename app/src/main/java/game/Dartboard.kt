@@ -126,9 +126,7 @@ class Dartboard {
         renderer.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, pose)
     }
 
-    fun calculateScore(X: Float, Y: Float) {
-        ScoreCalculator.getScore(X, Y)
-    }
+    fun calculateScore(X: Float, Y: Float) = ScoreCalculator.getScore(X, Y)
 
 }
 
@@ -147,7 +145,7 @@ private object ScoreCalculator {
     //r1 bull  r2~r3 trible r4~r5 double
     // origin 0.1070f, 0.1150f, 0.1620f, 0.1700f
     // new value 0.1040f, 0.1150f, 0.1610f, 0.1710f
-    private val Raid = floatArrayOf( 0.0445f, 0.1040f, 0.1150f, 0.1610f, 0.1710f)
+    private val Raid = floatArrayOf(0.0445f, 0.1040f, 0.1150f, 0.1610f, 0.1710f)
 
     /**
      * getScore

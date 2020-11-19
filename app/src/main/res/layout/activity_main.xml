@@ -46,8 +46,19 @@
             android:layout_width="250px"
             android:layout_height="250px"
             android:layout_gravity="center"
-            android:visibility="invisible"
+            android:layout_marginLeft="30dp"
+            android:layout_marginTop="30dp"
+            android:alpha="0.3"
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/textViewScore"
+            android:layout_width="50sp"
+            android:layout_height="wrap_content"
+            android:background="#FD424242"
             android:alpha="0.5"
-            />
+            android:padding="8dp"
+            android:textAlignment="center"
+            android:textSize="24sp" />
     </FrameLayout>
 </android.support.constraint.ConstraintLayout>
