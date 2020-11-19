@@ -2,6 +2,7 @@ package game
 
 import android.content.Context
 import android.util.Log
+import android.widget.TextView
 import com.google.ar.core.Pose
 import com.google.ar.core.examples.java.augmentedimage.rendering.DartRenderer
 import dartcontroller.Animate
@@ -15,12 +16,14 @@ fun FloatArray.distanceTo(other: FloatArray): Float {
             (this[2] - other[2]).pow(2))
 }
 
-class Game {
+class Game() {
     companion object {
         val TAG = Game::class.simpleName
     }
 
     lateinit var cameraPose: Pose
+    lateinit var scoreTextView: TextView
+
     val dart = Dart()
     val dartboard = Dartboard()
     private val flyingDart = FlyingDart(dartboard)
@@ -41,13 +44,19 @@ class Game {
         val ETA = dartboard.calculateHitTime(p0, v0)
         val animate = Animate(speed, cameraPose.compose(dart.standbyPose))
         var dartPoseInDartboard: Pose? = null
+        var score: Int = 0;
         Log.i(TAG, "dart shot, ETA: $ETA seconds")
 
         if (ETA > 0.0f) {
             flyingDart.addDart(System.currentTimeMillis(), animate, ETA)
             dartPoseInDartboard = dartboard.pose.inverse().compose(animate.calculatePose(ETA))
+            score = dartboard.calculateScore(dartPoseInDartboard.tx(), dartPoseInDartboard.ty())
+            scoreTextView.post {
+                scoreTextView.text = score.toString()
+            }
         }
-        Log.i(TAG, "My dart shoots, pose on dartboard $dartPoseInDartboard")
+        Log.i(TAG, "My dart shoots, pose on dartboard $dartPoseInDartboard; score: $score")
+
         return (dartPoseInDartboard to ETA)
     }
 

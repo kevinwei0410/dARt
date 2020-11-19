@@ -147,6 +147,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     @Override
     protected void onResume() {
         super.onResume();
+        game.setScoreTextView(findViewById(R.id.textViewScore));
         conn.startCameraThread();
         conn.startGameDataThread();
         conn.receiveThread.start();
@@ -330,7 +331,9 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             drawAugmentedImages(frame, projmtx, viewmtx, colorCorrectionRgba);
 
             if (canDrawDart) {
-                crosshair.setVisibility(View.VISIBLE);
+                if(crosshair.getVisibility() == View.INVISIBLE)
+                    crosshair.setVisibility(View.VISIBLE);
+
                 float[] modelViewMatrix = new float[16];
                 game.cameraPose = camera.getDisplayOrientedPose();
 
