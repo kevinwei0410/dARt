@@ -84,7 +84,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
     // Rendering. The Renderers are created here, and initialized when the GL surface is created.
     private GLSurfaceView surfaceView;
-    private ImageView fitToScanView;
+    private ImageView fitToScanView, crosshair;
     private RequestManager glideRequestManager;
     private boolean installRequested;
 
@@ -129,10 +129,14 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
         surfaceView.setWillNotDraw(false);
 
         fitToScanView = findViewById(R.id.image_view_fit_to_scan);
+        crosshair = findViewById(R.id.image_view_crosshair);
         glideRequestManager = Glide.with(this);
         glideRequestManager
                 .load(Uri.parse("file:///android_asset/fit_to_scan.png"))
                 .into(fitToScanView);
+        glideRequestManager
+                .load(Uri.parse("file:///android_asset/crosshair.png"))
+                .into(crosshair);
 
         installRequested = false;
 
@@ -326,6 +330,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
             drawAugmentedImages(frame, projmtx, viewmtx, colorCorrectionRgba);
 
             if (canDrawDart) {
+                crosshair.setVisibility(View.VISIBLE);
                 float[] modelViewMatrix = new float[16];
                 game.cameraPose = camera.getDisplayOrientedPose();
 
@@ -343,7 +348,8 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
                 dartPoseInWorld.toMatrix(modelViewMatrix, 0);
                 game.getDart().updateModelMatrix(modelViewMatrix);
                 game.draw(viewmtx, projmtx, colorCorrectionRgba);
-            }
+            } else
+                crosshair.setVisibility(View.INVISIBLE);
 
         } catch (Throwable t) {
             // Avoid crashing the application due to unhandled exceptions.

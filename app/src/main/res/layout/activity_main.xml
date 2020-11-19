@@ -40,5 +40,14 @@
             android:layout_height="match_parent"
             android:layout_gravity="center"
             android:scaleType="fitCenter" />
+
+        <ImageView
+            android:id="@+id/image_view_crosshair"
+            android:layout_width="250px"
+            android:layout_height="250px"
+            android:layout_gravity="center"
+            android:visibility="invisible"
+            android:alpha="0.5"
+            />
     </FrameLayout>
 </android.support.constraint.ConstraintLayout>
